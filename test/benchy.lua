@@ -26,81 +26,69 @@ end
 
 -- 1. THE HULL
 -- Main Volume: Flattened Sphere
--- Benchy is roughly 60mm long, 30mm wide.
+-- Roughly 60x30x30, but scaled down z
 hull_base = cad.create("sphere", {r=30, fn=100})
 hull_base = cad.transform("scale", hull_base, {1.0, 0.5, 0.5}) -- 60x30x30?
--- Flatten bottom: Cut off the bottom half + some
--- Current sphere is centered at 0,0,0. Z ranges -15 to +15.
--- We want a flat bottom. Let's slice everything below Z=-5?
+
+-- Flatten bottom
 bottom_cut = cad.create("cube", {size={100, 100, 50}, center=true})
-bottom_cut = cad.transform("translate", bottom_cut, {0, 0, -30}) -- Top at -5
+bottom_cut = cad.transform("translate", bottom_cut, {0, 0, -30})
 hull_flat = cad.difference({hull_base, bottom_cut})
 
 -- The Bow Cuts
--- Two large cylinders/spheres to pinch the front (positive X)
--- Actually, the sphere shape is already round. The text says "angled inward to carve".
--- Let's use large cylinders on the sides to taper the bow more sharply than a sphere.
-cutter_r = 50
+-- Use smaller radius for sharper pinch
+cutter_r = 40
 bow_cut_left = cad.create("cylinder", {h=100, r=cutter_r, fn=64})
-bow_cut_left = cad.transform("translate", bow_cut_left, {30, 45, 0}) 
+bow_cut_left = cad.transform("translate", bow_cut_left, {30, 36, 0}) 
 
 bow_cut_right = cad.create("cylinder", {h=100, r=cutter_r, fn=64})
-bow_cut_right = cad.transform("translate", bow_cut_right, {30, -45, 0})
+bow_cut_right = cad.transform("translate", bow_cut_right, {30, -36, 0})
 
 hull_shaped = cad.difference({hull_flat, bow_cut_left, bow_cut_right})
 
 -- Interior Hollow (Cockpit)
--- Smaller scaled version of the hull, shifted up/back
 inner_hull = cad.transform("scale", hull_base, {0.85, 0.85, 0.85})
 inner_hull = cad.transform("translate", inner_hull, {-2, 0, 5})
 hull_shell = cad.difference({hull_shaped, inner_hull})
 
--- Gunwales (Rim)
--- The "shell" operation naturally creates gunwales if we just cut the "inside".
--- But we need the deck to be solid.
-
 -- 2. DECK
--- Flat surface inside the shell
 deck = cad.create("cube", {size={55, 25, 2}, center=true})
-deck = cad.transform("translate", deck, {0, 0, 0}) -- Adjust Z to sit inside
+deck = cad.transform("translate", deck, {0, 0, 0})
 
 hull_group = cad.union({hull_shell, deck})
 
 -- 3. CABIN
--- Box on rear half
 cabin_w = 20
 cabin_l = 25
 cabin_h = 22
 cabin_box = cad.create("cube", {size={cabin_l, cabin_w, cabin_h}, center=true})
--- Place it
-cabin_box = cad.transform("translate", cabin_box, {-5, 0, 11 + 2}) -- On top of deck (z~2?)
+cabin_box = cad.transform("translate", cabin_box, {-5, 0, 11 + 2}) -- On top of deck
 
 -- Roof
 roof_plate = cad.create("cube", {size={cabin_l+4, cabin_w+2, 2}, center=true})
-roof_plate = cad.transform("translate", roof_plate, {-5, 0, 11 + 2 + 11 + 1}) -- On top of cabin
+roof_plate = cad.transform("translate", roof_plate, {-5, 0, 11 + 2 + 11 + 1})
 
--- Arch Cutouts (Side Windows/Doors)
-door_cut = create_arch(10, 30, 15) -- w=10, depth=30 (punch through), height=15
-door_cut = cad.transform("translate", door_cut, {-5, 0, 2}) -- Adjust Z base
+-- Arch Cutouts
+door_cut = create_arch(10, 30, 15)
+door_cut = cad.transform("translate", door_cut, {-5, 0, 2})
 
 -- Front Window
 window_front = cad.create("cube", {size={5, 12, 8}, center=true})
 window_front = cad.transform("translate", window_front, {8, 0, 18})
 
--- Rear Window (Circle)
-window_rear = cad.create("cylinder", {h=10, r=4, fn=32})
-window_rear = cad.transform("rotate", window_rear, {0, 90, 0}) -- Along X
+-- Rear Window (Circle) - INCREASE LENGTH
+window_rear = cad.create("cylinder", {h=20, r=4, fn=32}) -- increased h from 10 to 20
+window_rear = cad.transform("rotate", window_rear, {0, 90, 0})
 window_rear = cad.transform("translate", window_rear, {-18, 0, 18})
 
 cabin_final = cad.difference({cabin_box, door_cut, window_front, window_rear})
 
 -- 4. CHIMNEY
--- Tapered cylinder
 chimney = cad.create("cylinder", {h=12, r1=3, r2=4, fn=32})
--- Hollow it
 chimney_hole = cad.create("cylinder", {h=15, r=2, fn=32})
 chimney = cad.difference({chimney, chimney_hole})
-chimney = cad.transform("translate", chimney, {12, 0, 15}) -- In front of cabin
+-- MOVE FORWARD: from 12 to 18
+chimney = cad.transform("translate", chimney, {18, 0, 15})
 
 -- 5. STERN BOX
 stern_box = cad.create("cube", {size={8, 12, 5}, center=true})
