@@ -1,0 +1,10 @@
+
+# Compiled Lua extensions
+*.so
+
+# Output directory for generated STL files
+output/
+
+# Temporary files
+*.swp
+*~
