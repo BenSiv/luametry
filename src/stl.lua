@@ -1,17 +1,16 @@
-require("utils").using("utils")
 
-local stl = {}
+const stl = {}
 
-local function create_solid(name)
-    local solid = {
+function create_solid(name)
+    solid = {
         name = name,
         facets = {}
     }
     return solid
 end
 
-local function add_facet(solid, orientation, v1, v2, v3)
-    local facet = {
+function add_facet(solid, orientation, v1, v2, v3)
+    facet = {
         orientation = {
             x = orientation[1],
             y = orientation[2],
@@ -39,11 +38,11 @@ local function add_facet(solid, orientation, v1, v2, v3)
     return solid
 end
 
-local function encode_solid(solid)
-    local encoded_tbl = {}
+function encode_solid(solid)
+    encoded_tbl = {}
     
-    local facet_orientation
-    local vertex_position
+    facet_orientation = nil
+    vertex_position = nil
 
     table.insert(encoded_tbl, "solid " .. solid.name)
     for _, fct in pairs(solid.facets) do
@@ -59,7 +58,7 @@ local function encode_solid(solid)
     end
     table.insert(encoded_tbl, "endsolid")
 
-    local encoded_str = table.concat(encoded_tbl, "\n")
+    encoded_str = table.concat(encoded_tbl, "\n")
     return encoded_str
 end
 
@@ -68,28 +67,28 @@ function point_to_string(point)
 end
 
 function validate_points(points)
-    if length(points) < 3 then
+    if #points < 3 then
         print("The points table must contain at least 3 points.")
         return false
     end
 
-    local seen_points = {}
+    seen_points = {}
 
     for i, point in ipairs(points) do
-        if type(point) ~= "table" or length(point )~= 3 then
+        if type(point) != "table" or #point != 3 then
             print("Point at index " .. i .. " must be a table with exactly 3 numerical values.")
             return false
         end
 
         for j, coord in ipairs(point) do
-            if type(coord) ~= "number" then
+            if type(coord) != "number" then
                 print("Coordinate in point " .. i .. " at index " .. j .. " must be a number.")
                 return false
             end
         end
     
-        local point_str = point_to_string(point)
-        if seen_points[point_str] then
+        point_str = point_to_string(point)
+        if seen_points[point_str] != nil then
             print("Duplicate point found at index " .. i .. ": " .. point_str)
             return false
         end
@@ -100,14 +99,14 @@ function validate_points(points)
     return true
 end
 
-local function polygon(points)
-    local solid = create_solid("polygon")
+function polygon(points)
+    solid = create_solid("polygon")
     
     if not validate_points(points) then
         return nil
     end
 
-    facet_num = length(points) - 2
+    facet_num = #points - 2
 
     for fct = 1, facet_num do
         solid = stl.add_facet(
@@ -122,23 +121,23 @@ local function polygon(points)
     return solid
 end
 
-local function triangle(width, height)
-    local points = {
+function triangle(width, height)
+    points = {
         {0, 0, 0},
         {width, 0, 0},
         {0, height, 0}
     }
 
-    local solid = polygon(points)
+    solid = polygon(points)
     return solid
 end
 
-local function square(size, centered)
+function square(size, centered)
     centered = centered or false
-    local points
+    points = nil
 
     if centered then
-        local hs = size/2 -- half size
+        hs = size/2 -- half size
         points = {
             {-hs,-hs,0},
             {-hs,hs,0},
@@ -154,17 +153,17 @@ local function square(size, centered)
         }
     end
 
-    local solid = polygon(points)
+    solid = polygon(points)
     return solid
 end
 
-local function rectangle(width, height, centered)
+function rectangle(width, height, centered)
     centered = centered or false
-    local points
+    points = nil
 
     if centered then
-        local hw = width / 2  -- half width
-        local hh = height / 2 -- half height
+        hw = width / 2  -- half width
+        hh = height / 2 -- half height
         points = {
             {-hw, -hh, 0},
             {-hw, hh, 0},
@@ -180,22 +179,22 @@ local function rectangle(width, height, centered)
         }
     end
 
-    local solid = polygon(points)
+    solid = polygon(points)
     return solid
 end
 
-local function circle(radius, resolution)
-    local solid = create_solid("circle")
+function circle(radius, resolution)
+    solid = create_solid("circle")
 
-    local angle_step = (2 * math.pi) / resolution
+    angle_step = (2 * math.pi) / resolution
 
-    local prev_x = radius * math.cos(0)
-    local prev_y = radius * math.sin(0)
+    prev_x = radius * math.cos(0)
+    prev_y = radius * math.sin(0)
 
     for i = 1, resolution do
-        local angle = i * angle_step
-        local x = radius * math.cos(angle)
-        local y = radius * math.sin(angle)
+        angle = i * angle_step
+        x = radius * math.cos(angle)
+        y = radius * math.sin(angle)
 
         solid = stl.add_facet(
             solid,
