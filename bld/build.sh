@@ -5,8 +5,25 @@ set -e
 cd "$(dirname "$0")/.."
 
 PROJECT="luametry"
-LUAM_DIR="/home/bensiv/Projects/luam"
-MANIFOLD_DIR="/home/bensiv/Projects/manifold"
+
+# Resolve dependency paths (allow env overrides)
+if [ -z "$LUAM_DIR" ]; then
+    LUAM_DIR="$HOME/Projects/luam"
+fi
+
+if [ -z "$MANIFOLD_DIR" ]; then
+    MANIFOLD_DIR="$HOME/Projects/manifold"
+fi
+
+if [ -z "$LUAM_DIR" ] || [ ! -f "$LUAM_DIR/src/lauxlib.h" ]; then
+    echo "Error: LUAM_DIR not set or lauxlib.h not found. Set LUAM_DIR to your luam checkout." >&2
+    exit 1
+fi
+
+if [ -z "$MANIFOLD_DIR" ] || [ ! -f "$MANIFOLD_DIR/bindings/c/include/manifold/manifoldc.h" ]; then
+    echo "Error: MANIFOLD_DIR not set or manifold headers not found. Set MANIFOLD_DIR or build manifold." >&2
+    exit 1
+fi
 
 # Include paths
 INC_LUA="-I$LUAM_DIR/src"
