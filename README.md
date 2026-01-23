@@ -4,43 +4,46 @@ Luametry is a Lua-based parametric CAD tool that generates STL files. It provide
 
 ## Directory Structure
 
-- **`src/`**: Lua source code (`cad.lua`, `shapes.lua`, `stl.lua`) and C++ bindings (`csg_manifold.cpp`).
+- **`src/`**: Lua source code (`cad.lua`, `shapes.lua`, `stl.lua`, `cli.lua`) and C++ bindings.
 - **`tst/`**: Test scripts (e.g., `benchy.lua` for the 3DBenchy model).
-- **`tls/`**: Tools, such as the `watch.lua` script for live preview.
 - **`bld/`**: Build scripts (`build.sh`).
+- **`bin/`**: Output directory for the compiled binary (gitignored).
 - **`out/`**: Output directory for generated STL files.
 - **`doc/`**: Documentation and diagrams.
-- **`obj/`**: Intermediate build objects.
 
-## Usage
+## Build
 
-### 1. Build Luametry
-Compile the project into a standalone static executable (`luametry`):
+Compile the project into a standalone static executable:
 ```bash
 ./bld/build.sh
 ```
 This requires `g++`, `luam`, and `manifold` libraries installed.
 
-### 2. Run a Script
-Execute a Lua CAD script to generate a model:
-```bash
-./luametry tst/benchy.lua
-```
-The output will be saved to `out/benchy.stl` (as defined in the script).
+## Usage
 
-### 3. Live Preview
-Watch for file changes and automatically rebuild and view the model:
 ```bash
-./live_edit.sh
+# Run a CAD script
+./bin/luametry -c run -s tst/benchy.lua
+
+# Watch files and rebuild on change
+./bin/luametry -c watch -s tst/benchy.lua
+
+# Live preview with 3D viewer (default: f3d)
+./bin/luametry -c live -s tst/benchy.lua
+
+# Use a different viewer
+./bin/luametry -c live -s tst/benchy.lua -v meshlab
+
+# Or set via environment variable
+export LUAMETRY_VIEWER=meshlab
+./bin/luametry -c live -s tst/benchy.lua
 ```
-- Requires `f3d` for visualization.
-- Press **Up Arrow** in the viewer to reload the model after a rebuild.
 
 ## API Overview
 
 ```lua
-const cad = require("cad")
-const shapes = require("shapes")
+cad = require("cad")
+shapes = require("shapes")
 
 -- Create shapes
 cube = cad.create("cube", {size={10, 10, 10}, center=true})
@@ -56,3 +59,12 @@ arch = shapes.arch(10, 5, 10, 32)
 -- Export
 cad.export(part, "out/model.stl")
 ```
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+**Dependencies:**
+- [Manifold](https://github.com/elalish/manifold): Apache 2.0
+- [Lua](https://www.lua.org/): MIT
+- [LuaFileSystem (lfs)](https://github.com/lunarmodules/luafilesystem): MIT
