@@ -4,7 +4,7 @@ const stl = require("stl")
 -- Load CSG extension
 script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
-const csg = require("csg_manifold")
+const csg = require("csg.manifold")
 
 const cad = {}
 
