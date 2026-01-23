@@ -24,8 +24,8 @@ const PARAMS = {
     hull_inner_scale = 0.85,
     hull_inner_offset_x = -3,
     hull_inner_offset_z = 6,
-    bow_cutter_radius = 35,
-    bow_cutter_offset_x = 30,
+    bow_cutter_radius = 45,
+    bow_cutter_offset_x = 60,
     bow_cutter_offset_y = 32,
     bow_overhang_angle = 40,  -- degrees
     
@@ -34,20 +34,20 @@ const PARAMS = {
     deck_width = 26,
     deck_thickness = 2,
     deck_offset_x = -2,
-    deck_height = 5,
+    deck_height = 8,
     
     -- Cabin (Bridge)
     cabin_length = 22,
     cabin_width = 18,
     cabin_height = 22,
     cabin_offset_x = -8,
-    cabin_center_z = 17,
+    cabin_center_z = 19,
     
     -- Bridge roof
     roof_length = 23,
     roof_thickness = 2,
     roof_slope_angle = 5.5,  -- degrees
-    roof_height = 28.5,
+    roof_height = 30,
     
     -- Front window
     front_window_width = 10.5,
@@ -67,15 +67,15 @@ const PARAMS = {
     door_height = 14,
     door_depth = 25,
     door_offset_x = -8,
-    door_base_z = 6,
+    door_base_z = 9,
     
     -- Chimney
     chimney_outer_diameter = 7,
     chimney_inner_diameter = 3,
-    chimney_height = 15,
+    chimney_height = 36,
     chimney_hole_depth = 11,
     chimney_x = 10,
-    chimney_base_z = 6,
+    chimney_base_z = 30,
     
     -- Cargo box
     cargo_outer_length = 12,
