@@ -48,6 +48,25 @@ function difference(nodes)
     }
 end
 
+function boolean(action, nodes)
+    if type(action) != "string" then
+        error("Action must be a string.")
+    end
+    if type(nodes) != "table" then
+        error("Nodes must be a table.")
+    end
+    
+    if action == "union" then
+        return union(nodes)
+    elseif action == "intersection" then
+        return intersection(nodes)
+    elseif action == "difference" then
+        return difference(nodes)
+    else
+        error("Unknown boolean action: " .. action)
+    end
+end
+
 -- Render to Manifold Object
 
 function render_node(node)
@@ -184,9 +203,7 @@ end
 
 cad.create = create
 cad.transform = transform
-cad.union = union
-cad.intersection = intersection
-cad.difference = difference
+cad.boolean = boolean
 cad.export = export
 
 return cad

@@ -15,7 +15,7 @@ function test_cad()
     cyl_rot = cad.transform("rotate", cyl, {0, 90, 0})
     
     -- Union them
-    u = cad.union({c, cyl_rot})
+    u = cad.boolean("union", {c, cyl_rot})
     
     -- Translate whole thing up by 5
     final = cad.transform("translate", u, {0, 0, 5})
