@@ -108,7 +108,7 @@ function create_arch(w, d, h, fn)
     cyl_part = cad.create("cylinder", {h=d, r=r, fn=fn, center=true})
     cyl_part = cad.transform("rotate", cyl_part, {90, 0, 0})
     cyl_part = cad.transform("translate", cyl_part, {0, 0, hc})
-    return cad.union({cube_part, cyl_part})
+    return cad.boolean("union", {cube_part, cyl_part})
 end
 
 -- ============================================================================
@@ -124,25 +124,25 @@ hull_base = cad.transform("scale", hull_base, {P.hull_scale_x, P.hull_scale_y, P
 -- Flatten bottom
 bottom_cut = cad.create("cube", {size={100, 100, 50}, center=true})
 bottom_cut = cad.transform("translate", bottom_cut, {0, 0, -25})
-hull = cad.difference({hull_base, bottom_cut})
+hull = cad.boolean("difference", {hull_base, bottom_cut})
 
 -- Bow cuts
 bow_cut_l = cad.create("cylinder", {h=100, r=P.bow_cutter_radius, fn=P.fn_high})
 bow_cut_l = cad.transform("translate", bow_cut_l, {P.bow_cutter_offset_x, P.bow_cutter_offset_y, 0})
 bow_cut_r = cad.create("cylinder", {h=100, r=P.bow_cutter_radius, fn=P.fn_high})
 bow_cut_r = cad.transform("translate", bow_cut_r, {P.bow_cutter_offset_x, -P.bow_cutter_offset_y, 0})
-hull = cad.difference({hull, bow_cut_l, bow_cut_r})
+hull = cad.boolean("difference", {hull, bow_cut_l, bow_cut_r})
 
 -- Interior hollow
 inner_hull = cad.create("sphere", {r=P.hull_sphere_radius * P.hull_inner_scale, fn=P.fn_high})
 inner_hull = cad.transform("scale", inner_hull, {P.hull_inner_scale, P.hull_scale_y * 0.87, P.hull_scale_z * 0.83})
 inner_hull = cad.transform("translate", inner_hull, {P.hull_inner_offset_x, 0, P.hull_inner_offset_z})
-hull = cad.difference({hull, inner_hull})
+hull = cad.boolean("difference", {hull, inner_hull})
 
 -- 2. DECK
 deck = cad.create("cube", {size={P.deck_length, P.deck_width, P.deck_thickness}, center=true})
 deck = cad.transform("translate", deck, {P.deck_offset_x, 0, P.deck_height})
-hull_group = cad.union({hull, deck})
+hull_group = cad.boolean("union", {hull, deck})
 
 -- 3. CABIN
 cabin = cad.create("cube", {size={P.cabin_length, P.cabin_width, P.cabin_height}, center=true})
@@ -166,7 +166,7 @@ rear_window = cad.transform("translate", rear_window, {P.rear_window_x, 0, P.rea
 door_cut = create_arch(P.door_width, P.door_depth, P.door_height, P.fn_low)
 door_cut = cad.transform("translate", door_cut, {P.door_offset_x, 0, P.door_base_z})
 
-cabin = cad.difference({cabin, front_window, rear_window, door_cut})
+cabin = cad.boolean("difference", {cabin, front_window, rear_window, door_cut})
 
 -- 4. CHIMNEY
 chimney_outer_r = P.chimney_outer_diameter / 2
@@ -174,7 +174,7 @@ chimney_inner_r = P.chimney_inner_diameter / 2
 chimney_outer = cad.create("cylinder", {h=P.chimney_height, r=chimney_outer_r, fn=P.fn_low})
 chimney_inner = cad.create("cylinder", {h=P.chimney_hole_depth, r=chimney_inner_r, fn=P.fn_low})
 chimney_inner = cad.transform("translate", chimney_inner, {0, 0, P.chimney_height - P.chimney_hole_depth})
-chimney = cad.difference({chimney_outer, chimney_inner})
+chimney = cad.boolean("difference", {chimney_outer, chimney_inner})
 chimney = cad.transform("translate", chimney, {P.chimney_x, 0, P.chimney_base_z})
 
 -- 5. CARGO BOX
@@ -182,7 +182,7 @@ cargo_z = P.cargo_top_height - P.cargo_depth / 2
 box_outer = cad.create("cube", {size={P.cargo_outer_length, P.cargo_outer_width, P.cargo_depth}, center=true})
 box_inner = cad.create("cube", {size={P.cargo_inner_length, P.cargo_inner_width, P.cargo_depth + 2}, center=true})
 box_inner = cad.transform("translate", box_inner, {0, 0, 2})
-cargo_box = cad.difference({box_outer, box_inner})
+cargo_box = cad.boolean("difference", {box_outer, box_inner})
 cargo_box = cad.transform("translate", cargo_box, {P.cargo_x, 0, cargo_z})
 
 -- 6. HAWSEPIPE
@@ -190,10 +190,10 @@ hawse_r = P.hawse_diameter / 2
 hawse = cad.create("cylinder", {h=15, r=hawse_r, fn=P.fn_low})
 hawse = cad.transform("rotate", hawse, {0, 90, 0})
 hawse = cad.transform("translate", hawse, {P.hawse_x, 0, P.hawse_z})
-hull_group = cad.difference({hull_group, hawse})
+hull_group = cad.boolean("difference", {hull_group, hawse})
 
 -- FINAL ASSEMBLY
-benchy = cad.union({hull_group, cabin, roof, chimney, cargo_box})
+benchy = cad.boolean("union", {hull_group, cabin, roof, chimney, cargo_box})
 
 print("Exporting 3DBenchy...")
 if cad.export(benchy, "output/benchy.stl") then
