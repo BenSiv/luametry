@@ -9,3 +9,5 @@ output/
 *.swp
 *~
 bin/
+obj/
+out/
