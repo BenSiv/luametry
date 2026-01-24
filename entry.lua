@@ -2,4 +2,4 @@
 -- Main entry point for Luametry
 
 cli = require("cli")
-cli.main({...})
+cli.main()

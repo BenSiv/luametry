@@ -1,8 +1,7 @@
 -- cli.lua
--- Command-line interface for Luametry using argparse
+-- Command-line interface for Luametry
 
 lfs = require("lfs")
-argparse = require("lib.argparse")
 
 cli = {}
 
@@ -12,43 +11,59 @@ cli.config = {
     viewer_args = "--up +Z --resolution 1200,800"
 }
 
--- Define CLI arguments using argparse format
-cli.arg_string = """
-    -c --command arg string true
-    -s --script arg string false
-    -v --viewer arg string false
-"""
+-- Help strings for each command
+cli.help_strings = {
+    ["luametry"] = """
+Usage: luametry <command> [options]
 
-cli.help = """
-Luametry 1.0 - Lua-based parametric CAD
+luametry run <file>
+luametry live <file> [-v viewer]
 
-Commands:
-  -c run      Run a CAD script
-  -c watch    Watch files and rebuild
-  -c live     Live preview with viewer
+defaults:
+run  -> execute script, generate STL
+live -> run + watch + viewer
 
-Options:
-  -s <file>   Script file
-  -v <cmd>    3D viewer (default: f3d)
+luametry <command> -h for more info
+    """,
+    ["luametry run"] = """
+Description:
+Runs a CAD script and generates an STL file.
+
+Required:
+<file>  Path to the Lua CAD script.
 
 Examples:
-  luametry -c run -s tst/benchy.lua
-  luametry -c live -s tst/benchy.lua -v meshlab
-"""
+luametry run tst/benchy.lua
+    """,
+    ["luametry live"] = """
+Description:
+Live preview mode: runs the script, watches for changes, 
+and opens a 3D viewer that reloads on file changes.
 
--- Watch files for changes and rebuild
-function cli.watch(script)
-    print("Luametry Watch Mode")
-    print("Script: " .. script)
-    
+Required:
+<file>  Path to the Lua CAD script.
+
+Optional:
+-v --viewer <cmd>  3D viewer command (default: f3d)
+
+Examples:
+luametry live tst/benchy.lua
+luametry live tst/benchy.lua -v meshlab
+    """
+}
+
+function cli.get_help(command)
+    return cli.help_strings[command] or cli.help_strings["luametry"]
+end
+
+-- Watch files and call callback on change
+function cli.watch_loop(script, on_change)
     files = {
         "src/cad.lua",
         "src/shapes.lua",
         "src/stl.lua",
         script
     }
-    
-    build_cmd = arg[0] .. " -c run -s " .. script
     
     function get_mtimes(paths)
         mtimes = {}
@@ -67,79 +82,178 @@ function cli.watch(script)
     while true do
         os.execute("sleep 1")
         current_mtimes = get_mtimes(files)
-        changed = false
         
         for path, mtime in pairs(current_mtimes) do
             if last_mtimes[path] != mtime then
                 print("Changed: " .. path)
-                changed = true
+                on_change()
+                last_mtimes = current_mtimes
                 break
             end
-        end
-        
-        if changed then
-            print("Rebuilding...")
-            os.execute(build_cmd)
-            last_mtimes = current_mtimes
         end
     end
 end
 
+-- Run a script
+function cli.do_run(cmd_args)
+    -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry run"))
+            return "success"
+        end
+    end
+    
+    script = cmd_args[1]
+    
+    if script == nil then
+        print("Error: No script specified")
+        print(cli.get_help("luametry run"))
+        return "error"
+    end
+    
+    dofile(script)
+    return "success"
+end
+
 -- Live preview
-function cli.live(script, viewer)
+function cli.do_live(cmd_args)
+    -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry live"))
+            return "success"
+        end
+    end
+    
+    -- Parse optional viewer flag
+    viewer = cli.config.viewer
+    script = nil
+    i = 1
+    while i <= #cmd_args do
+        a = cmd_args[i]
+        if a == "-v" or a == "--viewer" then
+            viewer = cmd_args[i + 1]
+            i = i + 2
+        else
+            if script == nil then
+                script = a
+            end
+            i = i + 1
+        end
+    end
+    
+    if script == nil then
+        print("Error: No script specified")
+        print(cli.get_help("luametry live"))
+        return "error"
+    end
+    
     print("Luametry Live Mode")
     print("Script: " .. script)
     print("Viewer: " .. viewer)
     
-    bin = arg[0]
-    os.execute(bin .. " -c run -s " .. script)
-    
-    watcher_cmd = bin .. " -c watch -s " .. script .. " &"
-    os.execute(watcher_cmd)
-    
     basename = string.match(script, "([^/]+)%.lua$") or "output"
     output_file = "out/" .. basename .. ".stl"
     
-    viewer_cmd = viewer .. " " .. cli.config.viewer_args .. " " .. output_file
-    print("Tip: Press Up Arrow in viewer to reload.")
+    -- Initial build
+    dofile(script)
+    
+    -- Launch viewer in background
+    viewer_cmd = viewer .. " " .. cli.config.viewer_args .. " " .. output_file .. " &"
+    print("Tip: Press R in f3d to reload after changes.")
     os.execute(viewer_cmd)
     
-    os.execute("pkill -f '" .. bin .. " -c watch'")
+    -- Give viewer time to start
+    os.execute("sleep 0.5")
+    
+    -- Get viewer PID to monitor
+    viewer_pid_cmd = "pgrep -n " .. viewer
+    viewer_pid = nil
+    
+    -- Watch files for changes
+    files = {
+        "src/cad.lua",
+        "src/shapes.lua", 
+        "src/stl.lua",
+        script
+    }
+    
+    function get_mtimes(paths)
+        mtimes = {}
+        for _, path in ipairs(paths) do
+            attr = lfs.attributes(path)
+            if attr != nil then
+                mtimes[path] = attr.modification
+            end
+        end
+        return mtimes
+    end
+    
+    function viewer_running()
+        ret = os.execute("pgrep -x " .. viewer .. " > /dev/null 2>&1")
+        return ret == 0 or ret == true
+    end
+    
+    print("Watching " .. #files .. " files... (Ctrl+C or close viewer to stop)")
+    last_mtimes = get_mtimes(files)
+    
+    while viewer_running() do
+        os.execute("sleep 1")
+        current_mtimes = get_mtimes(files)
+        
+        for path, mtime in pairs(current_mtimes) do
+            if last_mtimes[path] != mtime then
+                print("Changed: " .. path .. " - Rebuilding...")
+                ok, err = pcall(dofile, script)
+                if not ok then
+                    print("Error: " .. tostring(err))
+                end
+                last_mtimes = current_mtimes
+                break
+            end
+        end
+    end
+    
     print("Live mode stopped.")
-end
-
--- Run a script
-function cli.run_script(script)
-    dofile(script)
+    return "success"
 end
 
 -- Main entry point
-function cli.main(cmd_args)
-    expected_args = argparse.def_args(cli.arg_string)
-    opts = argparse.parse_args(cmd_args, expected_args, cli.help)
+function cli.main()
+    command_funcs = {
+        ["run"] = cli.do_run,
+        ["live"] = cli.do_live
+    }
     
-    if opts == nil then
+    command = arg[1]
+    
+    -- Check for help flags at top level
+    if command == nil or command == "-h" or command == "--help" then
+        print(cli.get_help("luametry"))
         return
     end
     
-    viewer = opts.viewer or cli.config.viewer
-    script = opts.script
+    -- Update arg[0] for subcommand help
+    arg[0] = "luametry " .. command
     
-    if script == nil then
-        print("Error: No script specified (-s)")
+    -- Collect remaining arguments
+    cmd_args = {}
+    for i = 2, #arg do
+        table.insert(cmd_args, arg[i])
+    end
+    cmd_args[0] = arg[0]
+    
+    func = command_funcs[command]
+    if func == nil then
+        print("'" .. command .. "' is not a valid command\n")
+        print(cli.get_help("luametry"))
         return
     end
     
-    cmd = opts.command or "run"
-    
-    if cmd == "run" then
-        cli.run_script(script)
-    elseif cmd == "watch" then
-        cli.watch(script)
-    elseif cmd == "live" then
-        cli.live(script, viewer)
-    else
-        print("Error: Unknown command: " .. cmd)
+    status = func(cmd_args)
+    if status != "success" then
+        os.exit(1)
     end
 end
 

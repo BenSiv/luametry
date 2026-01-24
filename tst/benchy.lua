@@ -22,7 +22,7 @@ const PARAMS = {
     hull_scale_x = 1.0,
     hull_scale_y = 0.52,
     hull_scale_z = 0.42,
-    hull_inner_scale = 0.85,
+    hull_inner_scale = 0.95,
     hull_inner_offset_x = -3,
     hull_inner_offset_z = 6,
     bow_cutter_radius = 45,
@@ -35,7 +35,7 @@ const PARAMS = {
     deck_width = 26,
     deck_thickness = 2,
     deck_offset_x = -2,
-    deck_height = 8,
+    deck_height = 6,
     
     -- Cabin (Bridge)
     cabin_length = 22,
@@ -71,12 +71,12 @@ const PARAMS = {
     door_base_z = 9,
     
     -- Chimney
-    chimney_outer_diameter = 7,
+    chimney_outer_diameter = 5,
     chimney_inner_diameter = 3,
-    chimney_height = 20,
+    chimney_height = 8,
     chimney_hole_depth = 11,
-    chimney_x = 10,
-    chimney_base_z = 30,
+    chimney_x = 5,
+    chimney_base_z = 35,
     
     -- Cargo box
     cargo_outer_length = 12,
@@ -85,7 +85,7 @@ const PARAMS = {
     cargo_inner_width = 7,
     cargo_depth = 9,
     cargo_top_height = 15.5,  -- Above bottom surface
-    cargo_x = -22,
+    cargo_x = 7,
     
     -- Hawsepipe
     hawse_diameter = 4,
@@ -178,7 +178,7 @@ if P.chimney_height > 20 then
 end
 
 chimney = cad.boolean("difference", {chimney_outer, chimney_inner})
-chimney = cad.transform("translate", chimney, {P.cabin_offset_x, 0, P.chimney_base_z})
+chimney = cad.transform("translate", chimney, {P.cabin_offset_x + P.chimney_x, 0, P.chimney_base_z})
 
 -- 5. CARGO BOX
 cargo_z = P.cargo_top_height - P.cargo_depth / 2
