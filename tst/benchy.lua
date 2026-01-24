@@ -38,10 +38,10 @@ const PARAMS = {
     deck_height = 6,
     
     -- Cabin (Bridge)
-    cabin_length = 22,
-    cabin_width = 18,
+    cabin_length = 28,
+    cabin_width = 22,
     cabin_height = 22,
-    cabin_offset_x = -8,
+    cabin_offset_x = 11,
     cabin_center_z = 19,
     
     -- Bridge roof
@@ -71,12 +71,12 @@ const PARAMS = {
     door_base_z = 9,
     
     -- Chimney
-    chimney_outer_diameter = 5,
-    chimney_inner_diameter = 3,
-    chimney_height = 8,
+    chimney_outer_diameter = 18,
+    chimney_inner_diameter = 12,
+    chimney_height = 14,
     chimney_hole_depth = 11,
-    chimney_x = 5,
-    chimney_base_z = 35,
+    chimney_x = -8,
+    chimney_base_z = 30,
     
     -- Cargo box
     cargo_outer_length = 12,
@@ -85,7 +85,7 @@ const PARAMS = {
     cargo_inner_width = 7,
     cargo_depth = 9,
     cargo_top_height = 15.5,  -- Above bottom surface
-    cargo_x = 7,
+    cargo_x = -8,
     
     -- Hawsepipe
     hawse_diameter = 4,

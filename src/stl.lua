@@ -62,8 +62,52 @@ function encode_solid(solid)
     return encoded_str
 end
 
+function load_ascii(filename)
+    -- Verify file exists
+    f = io.open(filename, "r")
+    if f == nil then return nil end
+    io.close(f)
+    
+    solid = {
+        name = "imported",
+        facets = {}
+    }
+    
+    current_facet = nil
+    current_verts = {}
+    
+    for line in io.lines(filename) do
+        -- Trim whitespace
+        line = string.match(line, "^%s*(.-)%s*$")
+        
+        if string.find(line, "^solid") != nil then
+            solid.name = string.match(line, "^solid%s+(.*)") or "imported"
+            
+        elseif string.find(line, "^facet normal") != nil then
+            nx, ny, nz = string.match(line, "normal%s+([%d%.%-e]+)%s+([%d%.%-e]+)%s+([%d%.%-e]+)")
+            current_facet = {
+                orientation = {x=tonumber(nx), y=tonumber(ny), z=tonumber(nz)},
+                vertices = {}
+            }
+            
+        elseif string.find(line, "^vertex") != nil then
+            vx, vy, vz = string.match(line, "vertex%s+([%d%.%-e]+)%s+([%d%.%-e]+)%s+([%d%.%-e]+)")
+            table.insert(current_facet.vertices, {
+                x=tonumber(vx), y=tonumber(vy), z=tonumber(vz)
+            })
+            
+        elseif string.find(line, "^endfacet") != nil then
+            table.insert(solid.facets, current_facet)
+            current_facet = nil
+        end
+    end
+    
+    return solid
+end
+
 stl.create_solid = create_solid
 stl.add_facet = add_facet
 stl.encode_solid = encode_solid
+stl.load_ascii = load_ascii
 
 return stl
