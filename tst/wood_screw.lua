@@ -11,13 +11,37 @@ function create_wood_screw(params)
     fn_shaft = params.fn or 64
     tip_length = params.tip_length or 5
     
-    -- Head: Hexagon
-    head = cad.create("cylinder", {
-        r = head_dia / 2, 
-        h = head_height, 
-        fn = 6,
+    -- Head: Composite shape (Cone + Cylinder)
+    -- Cone part: tapers from shaft_dia/2 to head_dia/2
+    cone_height = head_height * 0.7
+    cyl_height = head_height * 0.3
+    
+    head_cone = cad.create("cylinder", {
+        r1 = shaft_dia / 2,     -- Bottom radius (matches shaft)
+        r2 = head_dia / 2,      -- Top radius (matches head)
+        h = cone_height,
+        fn = 32,
         center = true
     })
+    
+    -- Cylinder part: flat top (for driver slot)
+    head_cyl = cad.create("cylinder", {
+        r = head_dia / 2,
+        h = cyl_height,
+        fn = 32,
+        center = true
+    })
+    
+    -- Align parts
+    -- Cone sits on top of shaft (shaft ends at 0). Center is at `cone_height/2`.
+    head_cone = cad.transform("translate", head_cone, {0, 0, cone_height/2})
+    
+    -- Cylinder sits on top of cone. Center is at `cone_height + cyl_height/2`.
+    head_cyl = cad.transform("translate", head_cyl, {0, 0, cone_height + cyl_height/2})
+    
+    -- Combine head parts
+    -- Combine head parts (Solid Head - No Groove as requested)
+    head = cad.boolean("union", {head_cone, head_cyl})
     
     -- Shaft
     shaft_len = length - tip_length
@@ -38,7 +62,6 @@ function create_wood_screw(params)
     })
     
     -- Align parts
-    head = cad.transform("translate", head, {0, 0, head_height / 2})
     shaft = cad.transform("translate", shaft, {0, 0, -shaft_len / 2})
     tip = cad.transform("translate", tip, {0, 0, -shaft_len - tip_length/2})
     
