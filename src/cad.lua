@@ -37,6 +37,22 @@ function extrude(points, height, params)
     }
 end
 
+function revolve(points, params)
+    return {
+        type = "revolve",
+        points = points,
+        params = params or {}
+    }
+end
+
+function warp(node, warp_func)
+    return {
+        type = "warp",
+        child = node,
+        warp_func = warp_func
+    }
+end
+
 function union(nodes)
     return {
         type = "union",
@@ -226,6 +242,19 @@ function render_node(node)
         scale_y = node.params.scale_y or 1.0
         
         return csg.extrude(points, height, slices, twist, scale_x, scale_y)
+        
+    elseif node.type == "revolve" then
+        points = node.points
+        circular_segments = node.params.circular_segments or node.params.fn or 0
+        revolve_degrees = node.params.revolve_degrees or node.params.degrees or 360
+        
+        return csg.revolve(points, circular_segments, revolve_degrees)
+        
+    elseif node.type == "warp" then
+        child_node = render_node(node.child)
+        warp_func = node.warp_func
+        
+        return csg.warp(child_node, warp_func)
     end
     
     error("Unknown node type: " .. tostring(node.type))
@@ -304,6 +333,8 @@ cad.round = round
 cad.extrude = extrude
 cad.union = union
 cad.union_batch = union_batch
+cad.revolve = revolve
+cad.warp = warp
 
 
 return cad

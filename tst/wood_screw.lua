@@ -61,7 +61,7 @@ function create_wood_screw(params)
     end
     
     -- 1. TIP THREAD: Tapered to follow cone
-    tip_thread_len = tip_length + 2
+    tip_thread_len = tip_length
     profile_tip = {
         depth = params.thread_depth,
         crest_width = params.thread_crest_width,
@@ -77,10 +77,11 @@ function create_wood_screw(params)
         tool_func = tool_func_common
     }
     t_tip = shapes.thread(shaft_dia / 2, tip_thread_len, pitch, fn_shaft, false, profile_tip)
-    t_tip = cad.transform("translate", t_tip, {0, 0, -shaft_len - tip_length + tip_thread_len/2})
+    t_tip = cad.transform("translate", t_tip, {0, 0, -shaft_len - tip_length})
+    t_tip = cad.transform("rotate", t_tip, {0, 0, 120})
     
     -- 2. MAIN THREAD: No taper, constant radius on shaft
-    main_thread_len = shaft_len - fade_len - 5
+    main_thread_len = shaft_len - fade_len
     profile_main = {
         depth = params.thread_depth,
         crest_width = params.thread_crest_width,
@@ -88,10 +89,10 @@ function create_wood_screw(params)
         tool_func = tool_func_common
     }
     t_main = shapes.thread(shaft_dia / 2, main_thread_len, pitch, fn_shaft, false, profile_main)
-    t_main = cad.transform("translate", t_main, {0, 0, -(shaft_len - fade_len - 5) / 2})
+    t_main = cad.transform("translate", t_main, {0, 0, -shaft_len})
     
     -- 3. TOP THREAD: Fade out near head
-    top_thread_len = fade_len + 2
+    top_thread_len = fade_len
     profile_top = {
         depth = params.thread_depth,
         crest_width = params.thread_crest_width,
@@ -107,22 +108,22 @@ function create_wood_screw(params)
         tool_func = tool_func_common
     }
     t_top = shapes.thread(shaft_dia / 2, top_thread_len, pitch, fn_shaft, false, profile_top)
-    t_top = cad.transform("translate", t_top, {0, 0, top_thread_len/2 - 2})
+    t_top = cad.transform("translate", t_top, {0, 0, -top_thread_len})
     
     -- Combine everything
     threaded_shaft = cad.boolean("union", {shaft, t_tip, t_main, t_top, tip})
-    screw = cad.boolean("union", {head, threaded_shaft})
+    screw = cad.boolean("union", {head, threaded_shaft, tip})
     
     return screw
 end
 
 -- Parameters
 params = {
-    head_dia = 12,
-    head_height = 5,
-    shaft_dia = 6,
+    head_dia = 5,
+    head_height = 2,
+    shaft_dia = 3,
     length = 30,
-    tip_length = 5,
+    tip_length = 10,
     fade_length = 8,
     pitch = 1.5,
     fn = 64,

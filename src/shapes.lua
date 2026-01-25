@@ -16,184 +16,125 @@ function arch(width, height, thickness, fn)
 end
 
 function thread(r, h, pitch, fn, cut, profile_params)
-    -- Machined Thread: Subtracts a "cutter" shape in a spiral pattern.
-    -- This simulates cutting the thread with a tool.
+    -- Generates a thread using the Revolve+Warp method (Manifold)
+    -- Replaces the old stacking-cutter method.
     
     profile_params = profile_params or {}
     depth = profile_params.depth or (0.6 * pitch)
+    root_w = profile_params.root_width or (pitch * 0.8)
+    crest_w = profile_params.crest_width or (pitch * 0.1)
     
-    -- Tool Definition can be passed via profile_params.tool_func
-    -- tool_func(depth, crest_width, root_width) -> returns Shape
-    tool_func = profile_params.tool_func
+    -- Overshoot for cutter to ensure surface break
+    y_base = 0
+    if cut then
+        y_base = -(0.05 * pitch) 
+    end
+
+    -- 1. Create Linear Rack Profile (Trapezoid)
+    poly = {
+        {-root_w/2, y_base},         -- Bottom Left
+        {root_w/2, y_base},          -- Bottom Right
+        {crest_w/2, depth},          -- Top Right
+        {-crest_w/2, depth},         -- Top Left
+        {-root_w/2, y_base}          -- Close
+    }
     
-    cutter_base_w = profile_params.root_width or (pitch * 0.7)
-    cutter_tip_w = profile_params.crest_width or 0.1
+    -- Calculate length
+    num_turns = h / pitch
+    circumference = 2 * math.pi * r
+    total_len = circumference * num_turns
     
-    if tool_func == nil then
-        -- Default Cutter: Cone
-        tool_func = function(d, cw, rw)
-             -- Reverse cone orientation based on cut mode
-             -- cut=true (subtractive): tip inward, base outward
-             -- cut=false (additive): tip outward, base inward
-             r1 = 0
-             r2 = 0
-             if cut == true then
-                 r1 = cw / 2  -- Tip (inner)
-                 r2 = rw / 2  -- Base (outer)
-             else
-                 r1 = rw / 2  -- Base (inner)
-                 r2 = cw / 2  -- Tip (outer)
+    -- Resolution (fn determines segments per turn approx)
+    use_fn = fn or 64
+    total_slices = math.ceil(use_fn * num_turns)
+    
+    -- Extrude Rack
+    rack = cad.extrude(poly, total_len, {
+        slices = total_slices
+    })
+    
+    -- Pre-calculate taper params to capture them for closure
+    radius_taper = profile_params.radius_taper
+    
+    -- 2. Warp Function
+    warp_func = function(x, y, z)
+        -- Map Input Z (length) to Angle
+        angle = z / r -- radians
+        
+        -- Map Input Z to Z-Height (Pitch climb)
+        z_slope = pitch / (2 * math.pi * r)
+        z_climb = z * z_slope
+        
+        -- Taper Logic
+        base_r = r
+        current_r_offset = 0
+        
+        -- z in the warp function corresponds to the metric length along the helix (0 to total_len)
+        -- We need to map this back to the "height" of the screw to apply Taper based on height?
+        -- Taper is usually defined by "Z height along screw".
+        -- Our current Z height is `z_climb`.
+        current_z = z_climb
+        
+        if radius_taper != nil then
+             bottom = radius_taper.bottom
+             top = radius_taper.top
+             
+             if bottom != nil then
+                if current_z >= (bottom.start_z or 0) and current_z <= (bottom.end_z or 0) then
+                    t = (current_z - (bottom.start_z or 0)) / ((bottom.end_z or 0) - (bottom.start_z or 0))
+                    start_r = bottom.start_r or r
+                    end_r = bottom.end_r or r
+                    -- We modify the BASE radius
+                    target_r = start_r + (end_r - start_r) * t
+                    base_r = target_r
+                end
              end
              
-             c = cad.create("cylinder", {
-                h = d + 1.0, 
-                r1 = r1,
-                r2 = r2, 
-                fn = 6, 
-                center = true
-            })
-            -- Orient along X
-            c = cad.transform("rotate", c, {0, 90, 0})
-            return c
+             if top != nil then
+                 if current_z >= (top.start_z or h) and current_z <= (top.end_z or h) then
+                    t = (current_z - (top.start_z or h)) / ((top.end_z or h) - (top.start_z or h))
+                    start_r = top.start_r or r
+                    end_r = top.end_r or r
+                    target_r = start_r + (end_r - start_r) * t
+                    base_r = target_r
+                 end
+             end
         end
-    end
-    
-    -- We need to generate cutters along the helix.
-    turns = h / pitch
-    
-    -- Allow custom tool count or calculate based on fn
-    tool_count = profile_params.tool_count
-    total_steps = 0
-    if tool_count == nil then
-        -- Default: fn steps per turn
-        total_steps = math.ceil(turns * fn)
-    else
-        -- Custom: user-specified total count
-        total_steps = tool_count
-    end
-    
-    step_angle = (turns * 360) / total_steps
-    step_z = h / total_steps
-    
-    cutters = {}
-    
-    for i = 0, total_steps do
-        angle = i * step_angle
-        z = i * step_z
         
-        -- Support radius tapering for conical surfaces
-        -- Can taper at bottom (tip), top (head), or both
-        radius_taper = profile_params.radius_taper
-        current_r = r
-        if radius_taper == nil then
-            -- No taper, use constant radius
-            current_r = r
+        -- Apply Radial Offset (Profile Height)
+        -- cut=true (Union/Subtractive-ready): y=0 is Out (r), y=depth is In (r-depth)
+        -- cut=false (Additive/Screw): y=0 is In (r), y=depth is Out (r+depth)
+        
+        final_r = base_r
+        if cut == true then
+            -- "Cutting" a thread into a rod. 
+            -- y=0 (Base of trapezoid) should be at Surface (r).
+            -- y=depth (Tip) should be at r - depth.
+            final_r = base_r - y
         else
-            -- Support separate bottom and top taper zones
-            bottom_taper = radius_taper.bottom
-            top_taper = radius_taper.top
-            
-            current_r = r  -- Default to base radius
-            
-            -- Apply bottom taper (tip end, z near 0)
-            if bottom_taper == nil then
-                -- No bottom taper
-            else
-                start_r_bot = bottom_taper.start_r or r
-                end_r_bot = bottom_taper.end_r or r
-                start_z_bot = bottom_taper.start_z or 0
-                end_z_bot = bottom_taper.end_z or 0
-                
-                if z >= start_z_bot and z <= end_z_bot then
-                    taper_range = end_z_bot - start_z_bot
-                    taper_progress = (z - start_z_bot) / taper_range
-                    current_r = start_r_bot + (end_r_bot - start_r_bot) * taper_progress
-                end
-            end
-            
-            -- Apply top taper (head end, z near thread_len)
-            if top_taper == nil then
-                -- No top taper
-            else
-                start_r_top = top_taper.start_r or r
-                end_r_top = top_taper.end_r or r
-                start_z_top = top_taper.start_z or h
-                end_z_top = top_taper.end_z or h
-                
-                if z >= start_z_top and z <= end_z_top then
-                    taper_range = end_z_top - start_z_top
-                    taper_progress = (z - start_z_top) / taper_range
-                    current_r = start_r_top + (end_r_top - start_r_top) * taper_progress
-                end
-            end
+            -- "Adding" a thread to a rod.
+            -- y=0 (Base) at Surface (r).
+            -- y=depth (Tip) at r + depth.
+            final_r = base_r + y
         end
         
-        -- Create cutter instance using the callback
-        c = tool_func(depth, cutter_tip_w, cutter_base_w)
+        -- Output coordinates
+        new_x = final_r * math.cos(angle)
+        new_y = final_r * math.sin(angle)
+        new_z = z_climb + x -- Add profile width (x) to z height
         
-        -- Move to radius position
-        -- Center of tool is assumed to be at origin.
-        -- We place it such that the "tip" is at r - depth.
-        -- For the default cone oriented along X:
-        -- spans [-h/2, h/2]. Tip is at -h/2? No, cylinder centered.
-        -- Let's standardize the tool_func expectation:
-        -- Tool should be created at origin. 
-        -- If it's the standard cone, it runs -X to +X.
-        -- We want the "cutting edge" (tip) at r - depth.
-        
-        -- Current logic was specific to the cone.
-        -- Center X = r + (1.0 - depth) / 2
-        
-        -- To make this generic, maybe we just assume the tool is placed correctly relative to 0?
-        -- E.g. Tool at 0 cuts at radius 0?
-        -- No, better to let the loop handle the spiral, and the tool func handle the shape at X=R.
-        -- But rotation is needed.
-        
-        -- Let's stick to the previous transforms for now, assuming tool_func returns a generic tool.
-        -- Actually, the user might want full control.
-        -- If I just translate by 'r', the tool is at X=r.
-        -- Then rotate Z. Then translate Z.
-        
-        -- Let's change logic: 
-        -- 1. Create Tool (generic).
-        -- 2. Translate X by 'r'. (Surface)
-        -- 3. Rotate Z 'angle'.
-        -- 4. Translate Z 'z'.
-        -- This implies the tool_func must position the tool relative to the surface at X=0.
-        
-        -- Let's keep it simple and compatible with previous logic for now.
-        -- Previous: center_x = r + (1.0 - depth) / 2
-        -- This offset was because the cylinder was centered.
-        
-        -- Let's re-use the offset logic but allow override?
-        -- Or just pass 'r' to tool_func?
-        -- YES. tool_func(r, depth, ...)
-        
-        -- Refined Plan: 
-        -- tool_func(r, depth, tip_w, base_w) returns the tool placed at the correct radial distance and orientation (but at z=0, angle=0).
-        
-        -- Since I can't easily change the function signature in the if/else block above without copy-paste,
-        -- I'll stick to the existing transforms and assume the tool is "centered" like the cone.
-        
-        
-        -- Position cutter at radius
-        -- Default positioning: center between (r-depth) and (r+1)
-        temp_val = 1.0 - depth
-        offset_val = temp_val / 2.0
-        center_x = current_r + offset_val
-        
-        c = cad.transform("translate", c, {center_x, 0, 0})
-        
-        -- Rotate around Z to spiral angle
-        c = cad.transform("rotate", c, {0, 0, angle})
-        
-        -- Move up Z
-        c = cad.transform("translate", c, {0, 0, z})
-        
-        table.insert(cutters, c)
+        return new_x, new_y, new_z
     end
     
-    return cad.union_batch(cutters)
+    t = cad.warp(rack, warp_func)
+    
+    -- Post-transform: The warp creates it starting at Z=0.
+    -- The original stacking method might have centered it?
+    -- No, usually starts at Z=0?
+    -- Stacking: `z = i * step_z` (0 to h). 
+    -- So it generates from 0 to h.
+    -- Revolve/Warp generates 0 to h.
+    return t
 end
 
 shapes.arch = arch

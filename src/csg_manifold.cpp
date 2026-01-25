@@ -369,6 +369,112 @@ static int l_to_mesh(lua_State *L) {
   return 1;
 }
 
+// Revolve
+static int l_revolve(lua_State *L) {
+  if (!lua_istable(L, 1)) {
+    luaL_error(L, "Expected table of points for revolve");
+  }
+
+  int circular_segments = luaL_optint(L, 2, 0);
+  double revolve_degrees = luaL_optnumber(L, 3, 360.0);
+
+  // Parse points
+  int n = lua_objlen(L, 1);
+  if (n < 3)
+    luaL_error(L, "Polygon must have at least 3 points");
+
+  std::vector<ManifoldVec2> points(n);
+  for (int i = 1; i <= n; i++) {
+    lua_rawgeti(L, 1, i);
+    if (!lua_istable(L, -1))
+      luaL_error(L, "Point must be a table {x, y}");
+
+    lua_rawgeti(L, -1, 1);
+    points[i - 1].x = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_rawgeti(L, -1, 2);
+    points[i - 1].y = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_pop(L, 1); // Pop point table
+  }
+
+  ManifoldSimplePolygon *poly = manifold_simple_polygon(
+      manifold_alloc_simple_polygon(), points.data(), n);
+  ManifoldSimplePolygon *polys_array[] = {poly};
+  ManifoldPolygons *polys =
+      manifold_polygons(manifold_alloc_polygons(), polys_array, 1);
+
+  ManifoldManifold *m = manifold_revolve(alloc_manifold(), polys,
+                                         circular_segments, revolve_degrees);
+
+  manifold_delete_polygons(polys);
+  manifold_delete_simple_polygon(poly);
+
+  push_manifold(L, m);
+  return 1;
+}
+
+// Warp callback wrapper
+struct WarpContext {
+  lua_State *L;
+  int func_ref;
+};
+
+static ManifoldVec3 warp_callback(double x, double y, double z, void *ctx) {
+  WarpContext *wctx = (WarpContext *)ctx;
+  lua_State *L = wctx->L;
+
+  // Get the function from registry
+  lua_rawgeti(L, LUA_REGISTRYINDEX, wctx->func_ref);
+
+  // Push arguments
+  lua_pushnumber(L, x);
+  lua_pushnumber(L, y);
+  lua_pushnumber(L, z);
+
+  // Call function
+  if (lua_pcall(L, 3, 3, 0) != 0) {
+    luaL_error(L, "Warp function error: %s", lua_tostring(L, -1));
+  }
+
+  // Get results
+  ManifoldVec3 result;
+  result.z = lua_tonumber(L, -1);
+  lua_pop(L, 1);
+  result.y = lua_tonumber(L, -1);
+  lua_pop(L, 1);
+  result.x = lua_tonumber(L, -1);
+  lua_pop(L, 1);
+
+  return result;
+}
+
+// Warp
+static int l_warp(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+
+  if (!lua_isfunction(L, 2)) {
+    luaL_error(L, "Second argument must be a function");
+  }
+
+  // Store function reference in registry
+  lua_pushvalue(L, 2);
+  int func_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+  WarpContext ctx = {L, func_ref};
+
+  ManifoldManifold *res =
+      manifold_warp(alloc_manifold(), m, warp_callback, &ctx);
+
+  // Release function reference
+  luaL_unref(L, LUA_REGISTRYINDEX, func_ref);
+
+  push_manifold(L, res);
+  return 1;
+}
+
 // Garbage collection
 static int l_gc(lua_State *L) {
   ManifoldManifold **ud =
@@ -393,6 +499,8 @@ static const struct luaL_Reg csg_lib[] = {{"cube", l_cube},
                                           {"hull", l_batch_hull},
                                           {"union_batch", l_batch_union},
                                           {"extrude", l_extrude},
+                                          {"revolve", l_revolve},
+                                          {"warp", l_warp},
                                           {"translate", l_translate},
                                           {"rotate", l_rotate},
                                           {"scale", l_scale},
