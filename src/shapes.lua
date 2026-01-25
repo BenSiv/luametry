@@ -22,6 +22,9 @@ function thread(r, h, pitch, fn, cut, profile_params)
     profile_params = profile_params or {}
     depth = profile_params.depth or (0.6 * pitch)
     root_w = profile_params.root_width or (pitch * 0.8)
+    if root_w > (pitch * 0.99) then
+        root_w = pitch * 0.99
+    end
     crest_w = profile_params.crest_width or (pitch * 0.1)
     
     -- Overshoot for cutter to ensure surface break
@@ -31,6 +34,7 @@ function thread(r, h, pitch, fn, cut, profile_params)
     end
 
     -- 1. Create Linear Rack Profile (Trapezoid)
+    -- Default: CCW Winding (Additive / cut=false)
     poly = {
         {-root_w/2, y_base},         -- Bottom Left
         {root_w/2, y_base},          -- Bottom Right
@@ -38,6 +42,17 @@ function thread(r, h, pitch, fn, cut, profile_params)
         {-crest_w/2, depth},         -- Top Left
         {-root_w/2, y_base}          -- Close
     }
+
+    if cut then
+        -- Override: CW Winding (Subtractive / Inverting Map)
+        poly = {
+            {-root_w/2, y_base},         -- Bottom Left
+            {-crest_w/2, depth},         -- Top Left
+            {crest_w/2, depth},          -- Top Right
+            {root_w/2, y_base},          -- Bottom Right
+            {-root_w/2, y_base}          -- Close
+        }
+    end
     
     -- Calculate length
     num_turns = h / pitch
