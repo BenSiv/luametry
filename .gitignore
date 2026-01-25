@@ -11,3 +11,9 @@ output/
 bin/
 obj/
 out/
+
+# Build artifacts
+*.o
+*.a
+entry.static.c
+entry

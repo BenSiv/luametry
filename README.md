@@ -53,8 +53,14 @@ sphere = cad.create("sphere", {r=5, fn=32})
 part = cad.boolean("difference", {cube, sphere})
 
 -- High-level Helpers
-box = shapes.rounded_cube(10, 1, 32)
+c = cad.create("cube", {size=10, center=true})
+box = cad.round(c, 1, 32)
 arch = shapes.arch(10, 5, 10, 32)
+bolt = shapes.thread(5, 20, 1.0, 32)
+
+-- Extrude
+poly = {{0,0}, {10,0}, {5,8}}
+prism = cad.extrude(poly, 10, {twist=90, scale_x=0.5})
 
 -- Export
 cad.export(part, "out/model.stl")

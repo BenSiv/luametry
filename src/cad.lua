@@ -27,9 +27,26 @@ function transform(type, node, params)
     }
 end
 
+
+function extrude(points, height, params)
+    return {
+        type = "extrude",
+        points = points,
+        height = height,
+        params = params or {}
+    }
+end
+
 function union(nodes)
     return {
         type = "union",
+        children = nodes
+    }
+end
+
+function union_batch(nodes)
+    return {
+        type = "union_batch",
         children = nodes
     }
 end
@@ -48,6 +65,13 @@ function difference(nodes)
     }
 end
 
+function minkowski(nodes)
+    return {
+        type = "minkowski",
+        children = nodes
+    }
+end
+
 function boolean(action, nodes)
     if type(action) != "string" then
         error("Action must be a string.")
@@ -62,6 +86,13 @@ function boolean(action, nodes)
         return intersection(nodes)
     elseif action == "difference" then
         return difference(nodes)
+    elseif action == "minkowski" then
+        return minkowski(nodes)
+    elseif action == "hull" then
+        return {
+             type = "hull",
+             children = nodes
+        }
     else
         error("Unknown boolean action: " .. action)
     end
@@ -72,20 +103,31 @@ end
 function render_node(node)
     if node.type == "shape" then
         if node.shape == "cube" then
-            size = node.params.size or {1, 1, 1}
-            if type(size) == "number" then
-                size = {size, size, size}
+            -- Aliases
+            x = node.params.x or node.params.width or 1
+            y = node.params.y or node.params.depth or 1
+            z = node.params.z or node.params.height or 1
+            
+            size = node.params.size
+            if size != nil then
+                if type(size) == "number" then
+                    x, y, z = size, size, size
+                else
+                    x, y, z = size[1], size[2], size[3]
+                end
             end
+            
             center = node.params.center or false
             c_int = 0
             if center then c_int = 1 end
-            return csg.cube(size[1], size[2], size[3], c_int)
+            return csg.cube(x, y, z, c_int)
         
         elseif node.shape == "cylinder" then
-            h = node.params.h or 1
-            r = node.params.r or 1
-            r1 = node.params.r1 or r
-            r2 = node.params.r2 or r
+            h = node.params.h or node.params.height or 1
+            r = node.params.r or node.params.radius or 1
+            r1 = node.params.r1 or node.params.radius_bottom or r
+            r2 = node.params.r2 or node.params.radius_top or r
+            
             fn = node.params.fn or 32
             center = node.params.center or false
             c_int = 0
@@ -93,9 +135,19 @@ function render_node(node)
             return csg.cylinder(h, r1, r2, fn, c_int)
             
         elseif node.shape == "sphere" then
-            r = node.params.r or 1
+            r = node.params.r or node.params.radius or 1
             fn = node.params.fn or 32
             return csg.sphere(r, fn)
+            
+        elseif node.shape == "tetrahedron" then
+            return csg.tetrahedron()
+            
+        elseif node.shape == "torus" then
+            major = node.params.major_r or node.params.major_radius or 3
+            minor = node.params.minor_r or node.params.minor_radius or 1
+            major_segs = node.params.major_segs or 32
+            minor_segs = node.params.minor_segs or 16
+            return csg.torus(major, minor, major_segs, minor_segs)
         end
         
     elseif node.type == "transform" then
@@ -114,12 +166,20 @@ function render_node(node)
     
     elseif node.type == "union" then
         if #node.children == 0 then return csg.cube(0,0,0,0) end -- Empty fallback
-        res = render_node(node.children[1])
-        for i = 2, #node.children do
-            next_node = render_node(node.children[i])
-            res = csg.union(res, next_node)
+        -- Optimization: Use batch union if available
+        rendered_children = {}
+        for i, child in ipairs(node.children) do
+             table.insert(rendered_children, render_node(child))
         end
-        return res
+        return csg.union_batch(rendered_children)
+
+    elseif node.type == "union_batch" then
+        if #node.children == 0 then return csg.cube(0,0,0,0) end
+        rendered_children = {}
+        for i, child in ipairs(node.children) do
+            table.insert(rendered_children, render_node(child))
+        end
+        return csg.union_batch(rendered_children)
 
     elseif node.type == "intersection" then
         if #node.children == 0 then return csg.cube(0,0,0,0) end
@@ -138,6 +198,34 @@ function render_node(node)
             res = csg.difference(res, next_node)
         end
         return res
+
+    elseif node.type == "minkowski" then
+        if #node.children == 0 then return csg.cube(0,0,0,0) end
+        res = render_node(node.children[1])
+        for i = 2, #node.children do
+            next_node = render_node(node.children[i])
+            res = csg.minkowski(res, next_node)
+        end
+        return res
+        
+
+    elseif node.type == "hull" then
+        if #node.children == 0 then return csg.cube(0,0,0,0) end
+        rendered_children = {}
+        for i, child in ipairs(node.children) do
+            table.insert(rendered_children, render_node(child))
+        end
+        return csg.hull(rendered_children)
+
+    elseif node.type == "extrude" then
+        points = node.points
+        height = node.height
+        slices = node.params.slices or 0
+        twist = node.params.twist or 0
+        scale_x = node.params.scale_x or 1.0
+        scale_y = node.params.scale_y or 1.0
+        
+        return csg.extrude(points, height, slices, twist, scale_x, scale_y)
     end
     
     error("Unknown node type: " .. tostring(node.type))
@@ -201,9 +289,21 @@ function export(node, filename)
     return false
 end
 
+function round(shape, r, fn)
+    s = create("sphere", {r=r, fn=fn})
+    return boolean("minkowski", {shape, s})
+end
+
+
+
 cad.create = create
 cad.transform = transform
 cad.boolean = boolean
 cad.export = export
+cad.round = round
+cad.extrude = extrude
+cad.union = union
+cad.union_batch = union_batch
+
 
 return cad
