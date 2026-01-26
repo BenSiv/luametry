@@ -26,14 +26,14 @@ function create_wood_screw(params)
     
     -- Helper Function for Thread Tool
     tool_func_common = function(d, cw, rw)
-        c = cad.create("cylinder", {
+        c = cad.create.cylinder( {
             h = d + 1.0,
             r1 = rw / 2,
             r2 = cw / 2,
             fn = tool_fn_val,
             center = true
         })
-        c = cad.transform("rotate", c, {0, 90, 0})
+        c = cad.modify.rotate( c, {0, 90, 0})
         return c
     end
 
@@ -41,7 +41,7 @@ function create_wood_screw(params)
     cone_height = head_height * cone_ratio
     cyl_height = head_height * cyl_ratio
     
-    head_cone = cad.create("cylinder", {
+    head_cone = cad.create.cylinder( {
         r1 = shaft_dia / 2,     -- Bottom matches shaft
         r2 = head_dia / 2,      -- Top matches head
         h = cone_height,
@@ -49,7 +49,7 @@ function create_wood_screw(params)
         center = true
     })
     
-    head_cyl = cad.create("cylinder", {
+    head_cyl = cad.create.cylinder( {
         r = head_dia / 2,
         h = cyl_height,
         fn = 32,
@@ -57,10 +57,10 @@ function create_wood_screw(params)
     })
     
     -- Align Head Parts
-    head_cone = cad.transform("translate", head_cone, {0, 0, cone_height/2})
-    head_cyl = cad.transform("translate", head_cyl, {0, 0, cone_height + cyl_height/2})
+    head_cone = cad.modify.translate( head_cone, {0, 0, cone_height/2})
+    head_cyl = cad.modify.translate( head_cyl, {0, 0, cone_height + cyl_height/2})
     
-    head_solid = cad.boolean("union", {head_cone, head_cyl})
+    head_solid = cad.combine.union( {head_cone, head_cyl})
     
     -- 2. Recess Cut (Screwdriver Tip)
     -- Load screwdriver generator safely
@@ -88,27 +88,27 @@ function create_wood_screw(params)
     tip_z = (d_handle / 2) + d_shaft + d_point_h
     
     -- Invert Driver (Tip Down)
-    driver = cad.transform("rotate", driver, {180, 0, 0})
+    driver = cad.modify.rotate( driver, {180, 0, 0})
     
     -- Position Driver to penetrate Head
     head_top_z = cone_height + cyl_height
     sink = head_height * 0.6 -- Penetration depth
     
-    driver = cad.transform("translate", driver, {0, 0, head_top_z + tip_z - sink})
+    driver = cad.modify.translate( driver, {0, 0, head_top_z + tip_z - sink})
     
     -- Cut Recess
-    head = cad.boolean("difference", {head_solid, driver})
+    head = cad.combine.difference( {head_solid, driver})
     
     -- 3. Shaft & Tip Construction
     shaft_len = length - tip_length
-    shaft = cad.create("cylinder", {
+    shaft = cad.create.cylinder( {
         r = shaft_dia / 2, 
         h = shaft_len, 
         fn = fn_shaft,
         center = true
     })
     
-    tip = cad.create("cylinder", {
+    tip = cad.create.cylinder( {
         r1 = tip_sharpness,
         r2 = shaft_dia / 2,
         h = tip_length,
@@ -117,8 +117,8 @@ function create_wood_screw(params)
     })
     
     -- Align Shaft Parts
-    shaft = cad.transform("translate", shaft, {0, 0, -shaft_len / 2})
-    tip = cad.transform("translate", tip, {0, 0, -shaft_len - tip_length/2})
+    shaft = cad.modify.translate( shaft, {0, 0, -shaft_len / 2})
+    tip = cad.modify.translate( tip, {0, 0, -shaft_len - tip_length/2})
     
     -- 4. Thread Generation
     
@@ -139,8 +139,8 @@ function create_wood_screw(params)
         tool_func = tool_func_common
     }
     t_tip = shapes.thread(shaft_dia / 2, tip_thread_len, pitch, fn_shaft, false, profile_tip)
-    t_tip = cad.transform("translate", t_tip, {0, 0, -shaft_len - tip_length})
-    t_tip = cad.transform("rotate", t_tip, {0, 0, 120}) -- Phase match
+    t_tip = cad.modify.translate( t_tip, {0, 0, -shaft_len - tip_length})
+    t_tip = cad.modify.rotate( t_tip, {0, 0, 120}) -- Phase match
     
     -- B. Main Thread (Constant)
     main_thread_len = shaft_len - fade_len
@@ -151,7 +151,7 @@ function create_wood_screw(params)
         tool_func = tool_func_common
     }
     t_main = shapes.thread(shaft_dia / 2, main_thread_len, pitch, fn_shaft, false, profile_main)
-    t_main = cad.transform("translate", t_main, {0, 0, -shaft_len})
+    t_main = cad.modify.translate( t_main, {0, 0, -shaft_len})
     
     -- C. Top Thread (Fade Out)
     top_thread_len = fade_len
@@ -170,11 +170,11 @@ function create_wood_screw(params)
         tool_func = tool_func_common
     }
     t_top = shapes.thread(shaft_dia / 2, top_thread_len, pitch, fn_shaft, false, profile_top)
-    t_top = cad.transform("translate", t_top, {0, 0, -top_thread_len})
+    t_top = cad.modify.translate( t_top, {0, 0, -top_thread_len})
     
     -- 5. Assembly
-    threaded_shaft = cad.boolean("union", {shaft, t_tip, t_main, t_top, tip})
-    screw = cad.boolean("union", {head, threaded_shaft, tip})
+    threaded_shaft = cad.combine.union( {shaft, t_tip, t_main, t_top, tip})
+    screw = cad.combine.union( {head, threaded_shaft, tip})
     
     return screw
 end

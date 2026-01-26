@@ -33,6 +33,7 @@ end
 cad.create = {}
 
 function cad.create.cube(size, center)
+    if type(size) == "table" then return make_shape("cube", size) end
     params = { size = size, center = center }
     return make_shape("cube", params)
 end
@@ -42,6 +43,7 @@ function cad.create.cylinder(params)
 end
 
 function cad.create.sphere(r, fn)
+    if type(r) == "table" then return make_shape("sphere", r) end
     params = { r = r, fn = fn }
     return make_shape("sphere", params)
 end
@@ -51,11 +53,15 @@ function cad.create.tetrahedron()
 end
 
 function cad.create.torus(major, minor, major_segs, minor_segs)
+    if type(major) == "table" then return make_shape("torus", major) end
     params = { major_r=major, minor_r=minor, major_segs=major_segs, minor_segs=minor_segs }
     return make_shape("torus", params)
 end
 
 function cad.create.extrude(points, height, params)
+    if type(points) == "table" and points.points then
+         return { type = "extrude", points = points.points, height = points.height, params = points or {} }
+    end
     return {
         type = "extrude",
         points = points,
@@ -65,6 +71,9 @@ function cad.create.extrude(points, height, params)
 end
 
 function cad.create.revolve(points, params)
+    if type(points) == "table" and points.points then
+         return { type = "revolve", points = points.points, params = points or {} }
+    end
     return {
         type = "revolve",
         points = points,
@@ -93,8 +102,15 @@ function cad.modify.mirror(node, v)
     return make_transform("mirror", node, v)
 end
 
+
 function cad.modify.warp(node, func)
     return { type = "warp", child = node, warp_func = func }
+end
+
+function cad.modify.round(node, r, fn)
+    params = { r = r, fn = fn }
+    s = make_shape("sphere", params)
+    return make_op("minkowski", {node, s})
 end
 
 -- ============================================================================
@@ -355,6 +371,7 @@ cad.rotate = cad.modify.rotate
 cad.scale = cad.modify.scale
 cad.warp = cad.modify.warp
 cad.mirror = cad.modify.mirror
+cad.round = cad.modify.round
 
 cad.union = cad.combine.union
 cad.union_batch = function(nodes) return cad.combine.union(nodes) end

@@ -36,29 +36,29 @@ function make_thread_stacking()
     step_z = h / total_steps
     
     -- Create single cutter shape (cone-ish)
-    cutter_base = cad.create("cylinder", {
+    cutter_base = cad.create.cylinder( {
         h = p * 0.8, r1 = 0.1, r2 = p * 0.6, fn = 6, center=true
     })
-    cutter_base = cad.transform("rotate", cutter_base, {0, 90, 0}) -- Point along X
+    cutter_base = cad.modify.rotate( cutter_base, {0, 90, 0}) -- Point along X
     
     -- Central cylinder
-    cyl = cad.create("cylinder", {r=r, h=h, fn=fn, center=true})
+    cyl = cad.create.cylinder( {r=r, h=h, fn=fn, center=true})
     
     for i = 0, total_steps do
         angle = i * step_angle
         z = (i * step_z) - (h/2)
         
         -- Position cutter
-        c = cad.transform("translate", cutter_base, {r, 0, 0})
-        c = cad.transform("rotate", c, {0, 0, angle})
-        c = cad.transform("translate", c, {0, 0, z})
+        c = cad.modify.translate( cutter_base, {r, 0, 0})
+        c = cad.modify.rotate( c, {0, 0, angle})
+        c = cad.modify.translate( c, {0, 0, z})
         
         table.insert(cutters, c)
     end
     
     -- Subtract all cutters from cylinder
-    cutters_union = cad.union_batch(cutters)
-    return cad.boolean("difference", {cyl, cutters_union})
+    cutters_union = cad.combine.union_batch(cutters)
+    return cad.combine.difference( {cyl, cutters_union})
 end
 
 ---------------------------------------------------------
@@ -75,7 +75,7 @@ function make_thread_extrude()
     -- Let's make it additive for simplicity (a coil around a cylinder)
     
     -- Profile in XZ plane (which becomes XY for extrude, then Z is length)
-    -- Actually cad.extrude takes 2D points.
+    -- Actually cad.create.extrude takes 2D points.
     -- X corresponds to radial distance, Y corresponds to thread profile width?
     -- No, extrude lifts a 2D shape up Z.
     -- To make a horizontal thread, we extrude a profile that represents the cross section of the screw,
@@ -121,7 +121,7 @@ function make_thread_extrude()
     
     total_twist = (h / p) * 360
     
-    return cad.extrude(points, h, {
+    return cad.create.extrude(points, h, {
         twist = total_twist,
         slices = math.ceil((h/p) * fn) 
     })
@@ -225,7 +225,7 @@ function make_thread_revolve_warp()
     total_len = circumference * num_turns
     
     -- Extrude the tooth along X (length)
-    -- The profile is in YZ plane? cad.extrude takes "points" (2D). Usually XY.
+    -- The profile is in YZ plane? cad.create.extrude takes "points" (2D). Usually XY.
     -- Let's make profile in XY, extrude Z (width of rack). 
     -- Then rotate/translate to align.
     
@@ -238,7 +238,7 @@ function make_thread_revolve_warp()
     
     -- Extrude to create the long generic bar
     -- Note: We need high segmentation along the length to allow smooth bending
-    -- cad.extrude doesn't have "segments along height" parameter exposed in my basic wrapper?
+    -- cad.create.extrude doesn't have "segments along height" parameter exposed in my basic wrapper?
     -- Wait, looking at cad.lua:
     -- return csg.extrude(points, height, slices, twist, scale_x, scale_y)
     -- 'slices' is the segmentation along Z!
@@ -246,7 +246,7 @@ function make_thread_revolve_warp()
     segs_per_turn = 64
     total_slices = math.ceil(segs_per_turn * num_turns)
     
-    rack = cad.extrude(tooth_poly, total_len, {
+    rack = cad.create.extrude(tooth_poly, total_len, {
         slices = total_slices
     })
     
@@ -318,7 +318,7 @@ function make_thread_revolve_warp()
     -- X in profile -> Z in output (width of thread). Correct.
     -- Y in profile -> Radius in output (height of tooth). Correct.
     
-    return cad.warp(rack, helix_warper)
+    return cad.modify.warp(rack, helix_warper)
 end
 
 ---------------------------------------------------------

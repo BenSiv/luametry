@@ -11,7 +11,7 @@ function create_hex_nut(params)
     fn_shaft = params.fn or 64
 
     -- 1. Nut Body (Hexagon)
-    nut_body = cad.create("cylinder", {
+    nut_body = cad.create.cylinder( {
         r = head_dia / 2,
         h = head_height,
         fn = 6,
@@ -21,7 +21,7 @@ function create_hex_nut(params)
     -- 2. Core Hole (Major Diameter)
     -- We start with a hole of the Major Diameter.
     -- Then we ADD the thread ridges back in.
-    hole = cad.create("cylinder", {
+    hole = cad.create.cylinder( {
         r = shaft_dia / 2,
         h = head_height + 2, -- Thru hole
         fn = fn_shaft,
@@ -42,14 +42,14 @@ function create_hex_nut(params)
         crest_width = params.thread_crest_width or 0.1,
         root_width = params.thread_root_width or 1.6,
         tool_func = function(d, cw, rw)
-             c = cad.create("cylinder", {
+             c = cad.create.cylinder( {
                 h = d + 1.0, 
                 r1 = cw / 2, 
                 r2 = rw / 2, 
                 fn = tool_fn_val,
                 center = true
             })
-            c = cad.transform("rotate", c, {0, 90, 0})
+            c = cad.modify.rotate( c, {0, 90, 0})
             return c
         end
     }
@@ -59,25 +59,25 @@ function create_hex_nut(params)
     -- Align thread (Center it)
     -- shapes.thread generates from Z=0 to h. Center is h/2.
     -- We want center at 0.
-    t = cad.transform("translate", t, {0, 0, -head_height/2})
+    t = cad.modify.translate( t, {0, 0, -head_height/2})
     
     -- 4. CSG Operations
     -- Nut = (Body - Hole) + Thread
-    nut_shell = cad.boolean("difference", {nut_body, hole})
-    raw_nut = cad.boolean("union", {nut_shell, t})
+    nut_shell = cad.combine.difference( {nut_body, hole})
+    raw_nut = cad.combine.union( {nut_shell, t})
     
     -- 5. Cleanup / Flush Cut
     -- Cut away anything protruding Z > head_height/2 or Z < -head_height/2
     cut_h = head_height -- arbitrary large height for cutter
     cut_r = head_dia * 2 -- arbitrary large radius
     
-    top_cutter = cad.create("cylinder", {r=cut_r, h=cut_h, fn=32, center=true})
-    top_cutter = cad.transform("translate", top_cutter, {0, 0, head_height/2 + cut_h/2})
+    top_cutter = cad.create.cylinder( {r=cut_r, h=cut_h, fn=32, center=true})
+    top_cutter = cad.modify.translate( top_cutter, {0, 0, head_height/2 + cut_h/2})
     
-    bot_cutter = cad.create("cylinder", {r=cut_r, h=cut_h, fn=32, center=true})
-    bot_cutter = cad.transform("translate", bot_cutter, {0, 0, -head_height/2 - cut_h/2})
+    bot_cutter = cad.create.cylinder( {r=cut_r, h=cut_h, fn=32, center=true})
+    bot_cutter = cad.modify.translate( bot_cutter, {0, 0, -head_height/2 - cut_h/2})
     
-    final_nut = cad.boolean("difference", {raw_nut, top_cutter, bot_cutter})
+    final_nut = cad.combine.difference( {raw_nut, top_cutter, bot_cutter})
     
     return final_nut
 end

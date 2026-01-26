@@ -56,14 +56,14 @@ for _, sl in ipairs(slices) do
         
         -- Add marker
         marker_size = 0.5
-        marker = cad.create("cube", {marker_size, marker_size, marker_size, center=true})
+        marker = cad.create.cube( {marker_size, marker_size, marker_size, center=true})
         
         if sl.axis == "z" then
-             marker = cad.transform("translate", marker, {cx, cy, sl.pos})
+             marker = cad.modify.translate( marker, {cx, cy, sl.pos})
         elseif sl.axis == "y" then
-             marker = cad.transform("translate", marker, {cx, sl.pos, cy}) -- swapped Y->Z
+             marker = cad.modify.translate( marker, {cx, sl.pos, cy}) -- swapped Y->Z
         elseif sl.axis == "x" then
-             marker = cad.transform("translate", marker, {sl.pos, cx, cy}) -- swapped X->Z
+             marker = cad.modify.translate( marker, {sl.pos, cx, cy}) -- swapped X->Z
         end
         
         table.insert(visual_shapes, marker)
@@ -87,7 +87,7 @@ table.insert(visual_shapes, front_proj)
 
 -- Create composite visualization
 if #visual_shapes > 0 then
-    final_shape = cad.boolean("union", visual_shapes)
+    final_shape = cad.combine.union( visual_shapes)
     print("\nExporting visualization to out/benchy_projections.stl...")
     cad.export(final_shape, "out/benchy_projections.stl")
 end

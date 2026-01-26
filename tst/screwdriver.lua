@@ -19,7 +19,7 @@ function create_screwdriver(params)
     cutter_r_offset = params.cutter_r_offset or (fin_thickness / 10) -- Radial shift
     
     -- 1. Handle Construction
-    handle_base = cad.create("cylinder", {
+    handle_base = cad.create.cylinder( {
         r = handle_dia / 2,
         h = handle_len,
         fn = 32,
@@ -30,19 +30,19 @@ function create_screwdriver(params)
     cap_r = handle_dia / 2
     cap_fn = 32
     
-    cap_top = cad.create("sphere", { r = cap_r, fn = cap_fn })
-    cap_top = cad.transform("translate", cap_top, {0, 0, handle_len/2})
+    cap_top = cad.create.sphere( { r = cap_r, fn = cap_fn })
+    cap_top = cad.modify.translate( cap_top, {0, 0, handle_len/2})
 
-    cap_bot = cad.create("sphere", { r = cap_r, fn = cap_fn })
-    cap_bot = cad.transform("translate", cap_bot, {0, 0, -handle_len/2})
+    cap_bot = cad.create.sphere( { r = cap_r, fn = cap_fn })
+    cap_bot = cad.modify.translate( cap_bot, {0, 0, -handle_len/2})
     
-    handle_body = cad.boolean("union", {handle_base, cap_top, cap_bot})
+    handle_body = cad.combine.union( {handle_base, cap_top, cap_bot})
 
     -- Flutes: Grip cutouts
     flute_len = handle_len + handle_dia + 2 -- Ensure cut through caps
     flute_r = (handle_dia * flute_ratio) / 2
     
-    flute = cad.create("cylinder", {
+    flute = cad.create.cylinder( {
         r = flute_r,
         h = flute_len,
         fn = 32,
@@ -52,16 +52,16 @@ function create_screwdriver(params)
     -- Position flutes
     offset = handle_dia / 2
     flutes = {}
-    table.insert(flutes, cad.transform("translate", flute, {offset, 0, 0}))
-    table.insert(flutes, cad.transform("translate", flute, {-offset, 0, 0}))
-    table.insert(flutes, cad.transform("translate", flute, {0, offset, 0}))
-    table.insert(flutes, cad.transform("translate", flute, {0, -offset, 0}))
+    table.insert(flutes, cad.modify.translate( flute, {offset, 0, 0}))
+    table.insert(flutes, cad.modify.translate( flute, {-offset, 0, 0}))
+    table.insert(flutes, cad.modify.translate( flute, {0, offset, 0}))
+    table.insert(flutes, cad.modify.translate( flute, {0, -offset, 0}))
     
-    cutters_flute = cad.boolean("union", flutes)
-    handle = cad.boolean("difference", {handle_body, cutters_flute})
+    cutters_flute = cad.combine.union( flutes)
+    handle = cad.combine.difference( {handle_body, cutters_flute})
     
     -- 2. Shaft Construction
-    shaft_cyl = cad.create("cylinder", {
+    shaft_cyl = cad.create.cylinder( {
         r = shaft_dia / 2,
         h = shaft_len,
         fn = 32,
@@ -70,7 +70,7 @@ function create_screwdriver(params)
     
     -- Tip Point: Cone on top
     point_h = shaft_dia * point_ratio
-    tip_cone = cad.create("cylinder", {
+    tip_cone = cad.create.cylinder( {
         r1 = shaft_dia / 2,
         r2 = point_sharpness,
         h = point_h,
@@ -78,9 +78,9 @@ function create_screwdriver(params)
         center = true
     })
     -- Position cone on top of shaft
-    tip_cone = cad.transform("translate", tip_cone, {0, 0, shaft_len/2 + point_h/2})
+    tip_cone = cad.modify.translate( tip_cone, {0, 0, shaft_len/2 + point_h/2})
     
-    shaft = cad.boolean("union", {shaft_cyl, tip_cone})
+    shaft = cad.combine.union( {shaft_cyl, tip_cone})
     
     -- 3. Tip Sculpting (Phillips Head)
     -- V-Cut geometry: 4 tilted cubes subtracting mass to form the cross fins
@@ -90,42 +90,42 @@ function create_screwdriver(params)
     tip_cutters = {}
     for i=0,3 do
         -- Base Cube
-        cut = cad.create("cube", {size={cutter_size, cutter_size, tip_len*3}, center=true})
+        cut = cad.create.cube( {size={cutter_size, cutter_size, tip_len*3}, center=true})
         
         -- Transform Pipeline:
         -- 1. Diamond Orientation: Rotate 45 deg Z to align corner
-        cut = cad.transform("rotate", cut, {0, 0, 45})
+        cut = cad.modify.rotate( cut, {0, 0, 45})
         
         -- 2. Pivot Shift: Move sharp corner to origin (X=0)
-        cut = cad.transform("translate", cut, {half_diag, 0, 0})
+        cut = cad.modify.translate( cut, {half_diag, 0, 0})
         
         -- 3. Taper Tilt: Rotate around Y axis to create V-groove taper
-        cut = cad.transform("rotate", cut, {0, -taper_angle, 0})
+        cut = cad.modify.rotate( cut, {0, -taper_angle, 0})
         
         -- 4. Radial Offset: Shift outward to define fin thickness
-        cut = cad.transform("translate", cut, {cutter_r_offset, 0, cutter_z_offset})
+        cut = cad.modify.translate( cut, {cutter_r_offset, 0, cutter_z_offset})
         
         -- 5. Quadrant placement: Rotate to 0, 90, 180, 270
         angle_z = 45 + (i * 90)
-        cut = cad.transform("rotate", cut, {0, 0, angle_z})
+        cut = cad.modify.rotate( cut, {0, 0, angle_z})
         
         table.insert(tip_cutters, cut)
     end
     
-    tip_cutter_union = cad.boolean("union", tip_cutters)
+    tip_cutter_union = cad.combine.union( tip_cutters)
     
     -- Apply cuts to Shaft Tip
     -- Move cutters to tip location (Top of shaft cylinder)
-    tip_cutter_union = cad.transform("translate", tip_cutter_union, {0, 0, shaft_len/2})
+    tip_cutter_union = cad.modify.translate( tip_cutter_union, {0, 0, shaft_len/2})
     
-    shaft_tip = cad.boolean("difference", {shaft, tip_cutter_union})
+    shaft_tip = cad.combine.difference( {shaft, tip_cutter_union})
     
     -- 4. Assembly
     -- Align Handle and Shaft
     -- Move shaft up to sit on top of handle
-    shaft_tip = cad.transform("translate", shaft_tip, {0, 0, handle_len/2 + shaft_len/2})
+    shaft_tip = cad.modify.translate( shaft_tip, {0, 0, handle_len/2 + shaft_len/2})
     
-    driver = cad.boolean("union", {handle, shaft_tip})
+    driver = cad.combine.union( {handle, shaft_tip})
     return driver
 end
 

@@ -11,7 +11,7 @@ function create_bolt(params)
     fn_shaft = params.fn or 64
     
     -- Head: Hexagon is a cylinder with fn=6
-    head = cad.create("cylinder", {
+    head = cad.create.cylinder( {
         r = head_dia / 2, 
         h = head_height, 
         fn = 6,
@@ -19,7 +19,7 @@ function create_bolt(params)
     })
     
     -- Shaft
-    shaft = cad.create("cylinder", {
+    shaft = cad.create.cylinder( {
         r = shaft_dia / 2, 
         h = length, 
         fn = fn_shaft,
@@ -27,8 +27,8 @@ function create_bolt(params)
     })
     
     -- Align parts
-    head = cad.transform("translate", head, {0, 0, head_height / 2})
-    shaft = cad.transform("translate", shaft, {0, 0, -length / 2})
+    head = cad.modify.translate( head, {0, 0, head_height / 2})
+    shaft = cad.modify.translate( shaft, {0, 0, -length / 2})
     
     -- Thread
     -- M6 coarse pitch is 1mm.
@@ -43,7 +43,7 @@ function create_bolt(params)
         root_width = params.thread_root_width,
         -- Custom Tool Definition: 60-degreeish cone
         tool_func = function(d, cw, rw)
-             c = cad.create("cylinder", {
+             c = cad.create.cylinder( {
                 h = d + 1.0, 
                 r1 = cw / 2, -- Tip
                 r2 = rw / 2, -- Base
@@ -51,7 +51,7 @@ function create_bolt(params)
                 center = true
             })
             -- Orient along X
-            c = cad.transform("rotate", c, {0, 90, 0})
+            c = cad.modify.rotate( c, {0, 90, 0})
             return c
         end
     }
@@ -61,12 +61,12 @@ function create_bolt(params)
     t = shapes.thread(shaft_dia / 2, thread_len, pitch, fn_shaft, true, profile_params)
     
     -- Align thread with shaft
-    t = cad.transform("translate", t, {0, 0, -length})
+    t = cad.modify.translate( t, {0, 0, -length})
     
     -- Subtract thread from shaft
-    threaded_shaft = cad.boolean("difference", {shaft, t})
+    threaded_shaft = cad.combine.difference( {shaft, t})
     
-    bolt = cad.boolean("union", {head, threaded_shaft})
+    bolt = cad.combine.union( {head, threaded_shaft})
     
     return bolt
 end

@@ -62,12 +62,12 @@ nut = create_nut({
 -- Nut is centered at 0.
 -- Move nut to Z = -15
 nut_pos_z = -15
-nut = cad.transform("translate", nut, {0, 0, nut_pos_z})
+nut = cad.modify.translate( nut, {0, 0, nut_pos_z})
 
 -- Rotate nut slightly for visual flair?
-nut = cad.transform("rotate", nut, {0, 0, 30})
+nut = cad.modify.rotate( nut, {0, 0, 30})
 
-assembly = cad.boolean("union", {bolt, nut})
+assembly = cad.combine.union( {bolt, nut})
 
 print("Exporting Assembly...")
 cad.export(assembly, "out/nut_and_bolt.stl")
