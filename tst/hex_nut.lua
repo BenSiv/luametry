@@ -64,9 +64,27 @@ function create_hex_nut(params)
     -- 4. CSG Operations
     -- Nut = (Body - Hole) + Thread
     nut_shell = cad.boolean("difference", {nut_body, hole})
-    final_nut = cad.boolean("union", {nut_shell, t})
+    raw_nut = cad.boolean("union", {nut_shell, t})
+    
+    -- 5. Cleanup / Flush Cut
+    -- Cut away anything protruding Z > head_height/2 or Z < -head_height/2
+    cut_h = head_height -- arbitrary large height for cutter
+    cut_r = head_dia * 2 -- arbitrary large radius
+    
+    top_cutter = cad.create("cylinder", {r=cut_r, h=cut_h, fn=32, center=true})
+    top_cutter = cad.transform("translate", top_cutter, {0, 0, head_height/2 + cut_h/2})
+    
+    bot_cutter = cad.create("cylinder", {r=cut_r, h=cut_h, fn=32, center=true})
+    bot_cutter = cad.transform("translate", bot_cutter, {0, 0, -head_height/2 - cut_h/2})
+    
+    final_nut = cad.boolean("difference", {raw_nut, top_cutter, bot_cutter})
     
     return final_nut
+end
+
+-- Allow usage as a module
+if package.loaded.import_mode == true then
+    return create_hex_nut
 end
 
 params = {

@@ -71,6 +71,11 @@ function create_bolt(params)
     return bolt
 end
 
+-- Allow usage as a module
+if package.loaded.import_mode == true then
+    return create_bolt
+end
+
 -- Default Parameters
 -- Parameters (Edit these to change the model)
 params = {
