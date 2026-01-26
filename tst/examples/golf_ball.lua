@@ -4,7 +4,7 @@ cad = require("cad")
 print("Modeling Parametric Golf Ball")
 
 const ball_radius = 10
-golf_ball = cad.create.sphere( {r=ball_radius})
+golf_ball = cad.create.sphere({r=ball_radius})
 const num_dimples = 100
 const phi = (math.sqrt(5) - 1) / 2  -- golden ratio conjugate
 
@@ -35,7 +35,7 @@ iterations = 20
 repulsion_force = 0.5
 limit_dist_sq = (ball_radius * 4)^2 -- Check neighbors within reasonable distance
 
-print("Relaxing points (" .. iterations .. " iterations)...")
+print("Relaxing points (" .. iterations .. " iterations)")
 
 for iter = 1, iterations do
     forces = {}
@@ -87,14 +87,14 @@ end
 
 -- Create dimples at relaxed positions
 for _, p in ipairs(points) do
-    dimple = cad.create.sphere( {r=dimple_radius, fn=16})
-    dimple = cad.modify.translate( dimple, {p.x, p.y, p.z})
+    dimple = cad.create.sphere({r=dimple_radius, fn=16})
+    dimple = cad.modify.translate(dimple, {p.x, p.y, p.z})
     table.insert(dimples, dimple)
 end
 
 -- Subtract all dimples
 table.insert(dimples, 1, golf_ball) -- Prepend the main ball
-golf_ball = cad.combine.difference( dimples)
+golf_ball = cad.combine.difference(dimples)
 
 output_file = "out/golf_ball.stl"
 print("Exporting Golf Ball")

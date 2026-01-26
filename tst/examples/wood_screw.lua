@@ -26,14 +26,14 @@ function create_wood_screw(params)
     
     -- Helper Function for Thread Tool
     tool_func_common = function(d, cw, rw)
-        c = cad.create.cylinder( {
+        c = cad.create.cylinder({
             h = d + 1.0,
             r1 = rw / 2,
             r2 = cw / 2,
             fn = tool_fn_val,
             center = true
         })
-        c = cad.modify.rotate( c, {0, 90, 0})
+        c = cad.modify.rotate(c, {0, 90, 0})
         return c
     end
 
@@ -41,7 +41,7 @@ function create_wood_screw(params)
     cone_height = head_height * cone_ratio
     cyl_height = head_height * cyl_ratio
     
-    head_cone = cad.create.cylinder( {
+    head_cone = cad.create.cylinder({
         r1 = shaft_dia / 2,     -- Bottom matches shaft
         r2 = head_dia / 2,      -- Top matches head
         h = cone_height,
@@ -49,7 +49,7 @@ function create_wood_screw(params)
         center = true
     })
     
-    head_cyl = cad.create.cylinder( {
+    head_cyl = cad.create.cylinder({
         r = head_dia / 2,
         h = cyl_height,
         fn = 32,
@@ -57,15 +57,15 @@ function create_wood_screw(params)
     })
     
     -- Align Head Parts
-    head_cone = cad.modify.translate( head_cone, {0, 0, cone_height/2})
-    head_cyl = cad.modify.translate( head_cyl, {0, 0, cone_height + cyl_height/2})
+    head_cone = cad.modify.translate(head_cone, {0, 0, cone_height/2})
+    head_cyl = cad.modify.translate(head_cyl, {0, 0, cone_height + cyl_height/2})
     
-    head_solid = cad.combine.union( {head_cone, head_cyl})
+    head_solid = cad.combine.union({head_cone, head_cyl})
     
     -- 2. Recess Cut (Screwdriver Tip)
     -- Load screwdriver generator safely
     package.loaded.import_mode = true
-    create_driver = dofile("tst/screwdriver.lua")
+    create_driver = dofile("tst/examples/screwdriver.lua")
     package.loaded.import_mode = nil
     
     -- Driver Dimensions (For Subtracting Recess)
@@ -88,16 +88,16 @@ function create_wood_screw(params)
     tip_z = (d_handle / 2) + d_shaft + d_point_h
     
     -- Invert Driver (Tip Down)
-    driver = cad.modify.rotate( driver, {180, 0, 0})
+    driver = cad.modify.rotate(driver, {180, 0, 0})
     
     -- Position Driver to penetrate Head
     head_top_z = cone_height + cyl_height
     sink = head_height * 0.6 -- Penetration depth
     
-    driver = cad.modify.translate( driver, {0, 0, head_top_z + tip_z - sink})
+    driver = cad.modify.translate(driver, {0, 0, head_top_z + tip_z - sink})
     
     -- Cut Recess
-    head = cad.combine.difference( {head_solid, driver})
+    head = cad.combine.difference({head_solid, driver})
     
     -- 3. Shaft & Tip Construction
     shaft_len = length - tip_length

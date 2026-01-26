@@ -22,10 +22,10 @@ params = {
 
 -- Load Bolt Generator
 package.loaded.import_mode = true
-create_bolt = dofile("tst/hex_bolt.lua")
+create_bolt = dofile("tst/examples/hex_bolt.lua")
 
 -- Load Nut Generator
-create_nut = dofile("tst/hex_nut.lua")
+create_nut = dofile("tst/examples/hex_nut.lua")
 package.loaded.import_mode = nil
 
 print("Generating Bolt...")
