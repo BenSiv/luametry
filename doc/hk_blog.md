@@ -22,7 +22,7 @@ Under the hood, Luametry uses the **Manifold** geometry kernel. Manifold is fast
 
 Here is a complete example of creating a threaded hex bolt. This demonstrates the `shapes` library, the `cad` API, and the new explicit argument aliases for readability.
 
-[Rendered Bolt](images/bolt_render.png)
+![Rendered Bolt](images/bolt_render.png)
 
 ```lua
 -- Luam supports 'const' for immutable variables

@@ -69,6 +69,7 @@ arch = shapes.arch({width=10, height=5, thickness=10, segments=32})
 cad.export(part, "out/model.stl")
 ```
 
+```lua
 -- Extrude
 poly = {{0,0}, {10,0}, {5,8}}
 prism = cad.extrude(poly, 10, {twist=90, scale_x=0.5})
