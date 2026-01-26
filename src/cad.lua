@@ -59,7 +59,7 @@ function cad.create.torus(major, minor, major_segs, minor_segs)
 end
 
 function cad.create.extrude(points, height, params)
-    if type(points) == "table" and points.points then
+    if type(points) == "table" and points.points != nil then
          return { type = "extrude", points = points.points, height = points.height, params = points or {} }
     end
     return {
@@ -71,7 +71,7 @@ function cad.create.extrude(points, height, params)
 end
 
 function cad.create.revolve(points, params)
-    if type(points) == "table" and points.points then
+    if type(points) == "table" and points.points != nil then
          return { type = "revolve", points = points.points, params = points or {} }
     end
     return {
@@ -123,13 +123,13 @@ function cad.combine.union(nodes)
 end
 
 function cad.combine.difference(a, b)
-    if type(a) == "table" and a.type and type(b) == "table" and b.type then
+    if type(a) == "table" and a.type != nil and type(b) == "table" and b.type != nil then
         return make_op("difference", {a, b})
     else
          -- Fallback if user passes list? No, explicit API takes 2 args usually
          -- But strict difference takes list in scene graph logic? 
          -- Let's support list if passed
-         if type(a) == "table" and not a.type then return make_op("difference", a) end
+         if type(a) == "table" and a.type == nil then return make_op("difference", a) end
          return make_op("difference", {a, b})
     end
 end
