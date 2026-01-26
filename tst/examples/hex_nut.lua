@@ -54,7 +54,16 @@ function create_hex_nut(params)
         end
     }
 
-    t = shapes.thread(shaft_dia / 2, head_height, pitch, fn_shaft, true, profile_params)
+    t = shapes.thread({
+        r = shaft_dia / 2, 
+        h = head_height, 
+        pitch = pitch, 
+        fn = fn_shaft, 
+        cut = true,
+        depth = profile_params.depth,
+        crest_width = profile_params.crest_width,
+        root_width = profile_params.root_width
+    })
     
     -- Align thread (Center it)
     -- shapes.thread generates from Z=0 to h. Center is h/2.

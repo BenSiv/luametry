@@ -138,7 +138,17 @@ function create_wood_screw(params)
         },
         tool_func = tool_func_common
     }
-    t_tip = shapes.thread(shaft_dia / 2, tip_thread_len, pitch, fn_shaft, false, profile_tip)
+    t_tip = shapes.thread({
+        r = shaft_dia / 2,
+        h = tip_thread_len,
+        pitch = pitch,
+        fn = fn_shaft,
+        cut = false,
+        depth = profile_tip.depth,
+        crest_width = profile_tip.crest_width,
+        root_width = profile_tip.root_width,
+        radius_taper = profile_tip.radius_taper
+    })
     t_tip = cad.modify.translate( t_tip, {0, 0, -shaft_len - tip_length})
     t_tip = cad.modify.rotate( t_tip, {0, 0, 120}) -- Phase match
     
@@ -150,7 +160,16 @@ function create_wood_screw(params)
         root_width = thread_root_width,
         tool_func = tool_func_common
     }
-    t_main = shapes.thread(shaft_dia / 2, main_thread_len, pitch, fn_shaft, false, profile_main)
+    t_main = shapes.thread({
+        r = shaft_dia / 2, 
+        h = main_thread_len, 
+        pitch = pitch, 
+        fn = fn_shaft, 
+        cut = false,
+        depth = profile_main.depth,
+        crest_width = profile_main.crest_width,
+        root_width = profile_main.root_width
+    })
     t_main = cad.modify.translate( t_main, {0, 0, -shaft_len})
     
     -- C. Top Thread (Fade Out)
@@ -169,7 +188,17 @@ function create_wood_screw(params)
         },
         tool_func = tool_func_common
     }
-    t_top = shapes.thread(shaft_dia / 2, top_thread_len, pitch, fn_shaft, false, profile_top)
+    t_top = shapes.thread({
+        r = shaft_dia / 2, 
+        h = top_thread_len, 
+        pitch = pitch, 
+        fn = fn_shaft, 
+        cut = false,
+        depth = profile_top.depth,
+        crest_width = profile_top.crest_width,
+        root_width = profile_top.root_width,
+        radius_taper = profile_top.radius_taper
+    })
     t_top = cad.modify.translate( t_top, {0, 0, -top_thread_len})
     
     -- 5. Assembly

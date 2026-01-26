@@ -57,8 +57,17 @@ function create_bolt(params)
     }
     
     -- Pass 'true' for cut parameter (unused in new func but kept for compatibility?)
-    -- machined_thread(r, h, pitch, fn, cut, profile_params)
-    t = shapes.thread(shaft_dia / 2, thread_len, pitch, fn_shaft, true, profile_params)
+    -- machined_thread(params)
+    t = shapes.thread({
+        r = shaft_dia / 2, 
+        h = thread_len, 
+        pitch = pitch, 
+        fn = fn_shaft, 
+        cut = true, 
+        depth = profile_params.depth,
+        crest_width = profile_params.crest_width,
+        root_width = profile_params.root_width
+    })
     
     -- Align thread with shaft
     t = cad.modify.translate( t, {0, 0, -length})

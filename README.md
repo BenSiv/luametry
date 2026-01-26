@@ -22,41 +22,52 @@ This requires `g++`, `luam`, and `manifold` libraries installed.
 ## Usage
 
 ```bash
-# Run a CAD script
-./bin/luametry -c run -s tst/benchy.lua
-
-# Watch files and rebuild on change
-./bin/luametry -c watch -s tst/benchy.lua
+# Run a CAD script (generates STL)
+./bin/luametry run tst/benchy.lua
 
 # Live preview with 3D viewer (default: f3d)
-./bin/luametry -c live -s tst/benchy.lua
+./bin/luametry live tst/benchy.lua
 
 # Use a different viewer
-./bin/luametry -c live -s tst/benchy.lua -v meshlab
-
-# Or set via environment variable
-export LUAMETRY_VIEWER=meshlab
-./bin/luametry -c live -s tst/benchy.lua
+./bin/luametry live tst/benchy.lua -v meshlab
 ```
+
+## The Luam Dialect
+
+Luametry uses **Luam**, a modernized Lua dialect:
+*   **Local by Default**: Variables are local to scope (no `local` keyword needed).
+*   **Modern Syntax**: `!=` for inequality, `const` for constants, `"""multiline strings"""`.
+*   **Procedural**: Simplified API designed for geometry pipelines.
 
 ## API Overview
 
 ```lua
-cad = require("cad")
-shapes = require("shapes")
+-- Cad & Shapes are global or required modules
+const cad = require("cad")
+const shapes = require("shapes")
 
--- Create shapes
-cube = cad.create("cube", {size={10, 10, 10}, center=true})
-sphere = cad.create("sphere", {r=5, fn=32})
+-- Create shapes (long-form aliases supported)
+cube = cad.create.cube({size=10, center=true})
+sphere = cad.create.sphere({radius=5, segments=32})
 
 -- CSG Operations
-part = cad.boolean("difference", {cube, sphere})
+part = cad.combine.difference({cube, sphere})
 
--- High-level Helpers
-c = cad.create("cube", {size=10, center=true})
-box = cad.round(c, 1, 32)
-arch = shapes.arch(10, 5, 10, 32)
-bolt = shapes.thread(5, 20, 1.0, 32)
+-- High-level Shapes
+-- Thread with subtractive option (cut=true)
+bolt_thread = shapes.thread({
+    radius=5, 
+    height=20, 
+    pitch=1.0, 
+    cut=true
+})
+
+-- Arch
+arch = shapes.arch({width=10, height=5, thickness=10, segments=32})
+
+-- Export
+cad.export(part, "out/model.stl")
+```
 
 -- Extrude
 poly = {{0,0}, {10,0}, {5,8}}

@@ -3,7 +3,16 @@ const cad = require("cad")
 const shapes = {}
 
 -- Create an arch (cube + cylinder top)
-function arch(width, height, thickness, fn)
+function arch(params)
+    if type(params) != "table" then
+        error("shapes.arch expects a params table")
+    end
+    
+    width = params.width or params.w or 10
+    height = params.height or params.h or 5
+    thickness = params.thickness or params.t or params.depth or params.d or 2
+    fn = params.fn or params.segments or 32
+    
     -- Create an arch shape
     -- Outer arc
     outer = cad.create("cylinder", {r=width/2, h=thickness, fn=fn, center=true})
@@ -15,17 +24,27 @@ function arch(width, height, thickness, fn)
     return csg.cube(1,1,1,1) -- Placeholder arch was likely empty?
 end
 
-function thread(r, h, pitch, fn, cut, profile_params)
+function thread(params)
     -- Generates a thread using the Revolve+Warp method (Manifold)
     -- Replaces the old stacking-cutter method.
     
-    profile_params = profile_params or {}
-    depth = profile_params.depth or (0.6 * pitch)
-    root_w = profile_params.root_width or (pitch * 0.8)
+    if type(params) != "table" then
+        error("shapes.thread expects a params table")
+    end
+    
+    r = params.r or params.radius or 5
+    h = params.h or params.height or params.length or params.l or 10
+    pitch = params.pitch or params.p or 1.0
+    fn = params.fn or params.segments or 64
+    cut = params.cut or params.subtractive or params.c or false
+    
+    -- Profile Params merged into top level
+    depth = params.depth or params.d or (0.6 * pitch)
+    root_w = params.root_width or params.rw or (pitch * 0.8)
     if root_w > (pitch * 0.99) then
         root_w = pitch * 0.99
     end
-    crest_w = profile_params.crest_width or (pitch * 0.1)
+    crest_w = params.crest_width or params.cw or (pitch * 0.1)
     
     -- Overshoot for cutter to ensure surface break
     y_base = 0
@@ -69,7 +88,7 @@ function thread(r, h, pitch, fn, cut, profile_params)
     })
     
     -- Pre-calculate taper params to capture them for closure
-    radius_taper = profile_params.radius_taper
+    radius_taper = params.radius_taper
     
     -- 2. Warp Function
     warp_func = function(x, y, z)
@@ -143,12 +162,6 @@ function thread(r, h, pitch, fn, cut, profile_params)
     
     t = cad.warp(rack, warp_func)
     
-    -- Post-transform: The warp creates it starting at Z=0.
-    -- The original stacking method might have centered it?
-    -- No, usually starts at Z=0?
-    -- Stacking: `z = i * step_z` (0 to h). 
-    -- So it generates from 0 to h.
-    -- Revolve/Warp generates 0 to h.
     return t
 end
 

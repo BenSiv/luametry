@@ -205,10 +205,10 @@ function render_node(node)
         if node.shape == "cube" then
             p = node.params
             -- Handle size variants
-            sz = p.size
-            x = p.x or p.width or 1
-            y = p.y or p.depth or 1
-            z = p.z or p.height or 1
+            sz = p.size or p.s
+            x = p.x or p.width or p.w or 1
+            y = p.y or p.depth or p.d or 1
+            z = p.z or p.height or p.h or 1
             
             if sz != nil then
                 if type(sz) == "number" then
@@ -218,23 +218,23 @@ function render_node(node)
                 end
             end
             
-            c = p.center and 1 or 0
+            c = (p.center or p.c) and 1 or 0
             return csg.cube(x, y, z, c)
             
         elseif node.shape == "cylinder" then
             p = node.params
             h = p.h or p.height or 1
             r = p.r or p.radius or 1
-            r1 = p.r1 or p.radius_bottom or r
-            r2 = p.r2 or p.radius_top or r
-            fn = p.fn or 32
-            c = p.center and 1 or 0
+            r1 = p.r1 or p.radius_bottom or p.radius1 or r
+            r2 = p.r2 or p.radius_top or p.radius2 or r
+            fn = p.fn or p.segments or 32
+            c = (p.center or p.c) and 1 or 0
             return csg.cylinder(h, r1, r2, fn, c)
             
         elseif node.shape == "sphere" then
             p = node.params
             r = p.r or p.radius or 1
-            fn = p.fn or 32
+            fn = p.fn or p.segments or 32
             return csg.sphere(r, fn)
             
         elseif node.shape == "tetrahedron" then
@@ -242,10 +242,10 @@ function render_node(node)
 
         elseif node.shape == "torus" then
             p = node.params
-            maj = p.major_r or 3
-            min = p.minor_r or 1
-            seg_maj = p.major_segs or 32
-            seg_min = p.minor_segs or 16
+            maj = p.major_r or p.major_radius or p.R or 3
+            min = p.minor_r or p.minor_radius or p.r or 1
+            seg_maj = p.major_segs or p.major_segments or 32
+            seg_min = p.minor_segs or p.minor_segments or 16
             return csg.torus(maj, min, seg_maj, seg_min)
         end
         
