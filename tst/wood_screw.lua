@@ -3,7 +3,7 @@ cad = require("cad")
 shapes = require("shapes")
 
 function create_wood_screw(params)
-    -- Parameters
+    -- Parameters & Defaults
     head_dia = params.head_dia or 10  
     head_height = params.head_height or 4
     shaft_dia = params.shaft_dia or 5
@@ -11,66 +11,20 @@ function create_wood_screw(params)
     fn_shaft = params.fn or 64
     tip_length = params.tip_length or 5
     
-    -- Head: Composite shape (Cone + Cylinder)
-    -- Cone part: tapers from shaft_dia/2 to head_dia/2
-    cone_height = head_height * 0.7
-    cyl_height = head_height * 0.3
+    -- Design Tunables
+    cone_ratio = params.cone_ratio or 0.7  -- Head cone portion
+    cyl_ratio = params.cyl_ratio or 0.3    -- Head cylinder portion
+    tip_sharpness = params.tip_sharpness or 0.01
     
-    head_cone = cad.create("cylinder", {
-        r1 = shaft_dia / 2,     -- Bottom radius (matches shaft)
-        r2 = head_dia / 2,      -- Top radius (matches head)
-        h = cone_height,
-        fn = 32,
-        center = true
-    })
-    
-    -- Cylinder part: flat top (for driver slot)
-    head_cyl = cad.create("cylinder", {
-        r = head_dia / 2,
-        h = cyl_height,
-        fn = 32,
-        center = true
-    })
-    
-    -- Align parts
-    -- Cone sits on top of shaft (shaft ends at 0). Center is at `cone_height/2`.
-    head_cone = cad.transform("translate", head_cone, {0, 0, cone_height/2})
-    
-    -- Cylinder sits on top of cone. Center is at `cone_height + cyl_height/2`.
-    head_cyl = cad.transform("translate", head_cyl, {0, 0, cone_height + cyl_height/2})
-    
-    -- Combine head parts
-    -- Combine head parts (Solid Head - No Groove as requested)
-    head = cad.boolean("union", {head_cone, head_cyl})
-    
-    -- Shaft
-    shaft_len = length - tip_length
-    shaft = cad.create("cylinder", {
-        r = shaft_dia / 2, 
-        h = shaft_len, 
-        fn = fn_shaft,
-        center = true
-    })
-    
-    -- Pointed Tip
-    tip = cad.create("cylinder", {
-        r1 = 0.01,
-        r2 = shaft_dia / 2,
-        h = tip_length,
-        fn = fn_shaft,
-        center = true
-    })
-    
-    -- Align parts
-    shaft = cad.transform("translate", shaft, {0, 0, -shaft_len / 2})
-    tip = cad.transform("translate", tip, {0, 0, -shaft_len - tip_length/2})
-    
-    -- Thread parameters
+    -- Thread Parameters
     pitch = params.pitch or 1.5
     tool_fn_val = params.tool_fn or 6
     fade_len = params.fade_length or 8
+    thread_depth = params.thread_depth
+    thread_crest_width = params.thread_crest_width
+    thread_root_width = params.thread_root_width
     
-    -- Common tool function
+    -- Helper Function for Thread Tool
     tool_func_common = function(d, cw, rw)
         c = cad.create("cylinder", {
             h = d + 1.0,
@@ -82,16 +36,101 @@ function create_wood_screw(params)
         c = cad.transform("rotate", c, {0, 90, 0})
         return c
     end
+
+    -- 1. Head Construction (Composite Cone + Cylinder)
+    cone_height = head_height * cone_ratio
+    cyl_height = head_height * cyl_ratio
     
-    -- 1. TIP THREAD: Tapered to follow cone
+    head_cone = cad.create("cylinder", {
+        r1 = shaft_dia / 2,     -- Bottom matches shaft
+        r2 = head_dia / 2,      -- Top matches head
+        h = cone_height,
+        fn = 32,
+        center = true
+    })
+    
+    head_cyl = cad.create("cylinder", {
+        r = head_dia / 2,
+        h = cyl_height,
+        fn = 32,
+        center = true
+    })
+    
+    -- Align Head Parts
+    head_cone = cad.transform("translate", head_cone, {0, 0, cone_height/2})
+    head_cyl = cad.transform("translate", head_cyl, {0, 0, cone_height + cyl_height/2})
+    
+    head_solid = cad.boolean("union", {head_cone, head_cyl})
+    
+    -- 2. Recess Cut (Screwdriver Tip)
+    -- Load screwdriver generator safely
+    package.loaded.import_mode = true
+    create_driver = dofile("tst/screwdriver.lua")
+    package.loaded.import_mode = nil
+    
+    -- Driver Dimensions (For Subtracting Recess)
+    driver_params = {
+        handle_dia = 10, 
+        handle_len = 10, 
+        shaft_dia = 6,   -- Standard #2 Phillips approx
+        shaft_len = 50,
+        tip_len = 10
+    }
+    driver = create_driver(driver_params)
+    
+    -- Calculate positioning for driver
+    d_handle = driver_params.handle_dia
+    d_shaft = driver_params.shaft_len
+    d_shaft_dia = driver_params.shaft_dia
+    d_point_h = d_shaft_dia * 1.0 -- implicit default from screwdriver.lua
+    
+    -- Tip Z Position relative to Driver Center
+    tip_z = (d_handle / 2) + d_shaft + d_point_h
+    
+    -- Invert Driver (Tip Down)
+    driver = cad.transform("rotate", driver, {180, 0, 0})
+    
+    -- Position Driver to penetrate Head
+    head_top_z = cone_height + cyl_height
+    sink = head_height * 0.6 -- Penetration depth
+    
+    driver = cad.transform("translate", driver, {0, 0, head_top_z + tip_z - sink})
+    
+    -- Cut Recess
+    head = cad.boolean("difference", {head_solid, driver})
+    
+    -- 3. Shaft & Tip Construction
+    shaft_len = length - tip_length
+    shaft = cad.create("cylinder", {
+        r = shaft_dia / 2, 
+        h = shaft_len, 
+        fn = fn_shaft,
+        center = true
+    })
+    
+    tip = cad.create("cylinder", {
+        r1 = tip_sharpness,
+        r2 = shaft_dia / 2,
+        h = tip_length,
+        fn = fn_shaft,
+        center = true
+    })
+    
+    -- Align Shaft Parts
+    shaft = cad.transform("translate", shaft, {0, 0, -shaft_len / 2})
+    tip = cad.transform("translate", tip, {0, 0, -shaft_len - tip_length/2})
+    
+    -- 4. Thread Generation
+    
+    -- A. Tip Thread (Tapered)
     tip_thread_len = tip_length
     profile_tip = {
-        depth = params.thread_depth,
-        crest_width = params.thread_crest_width,
-        root_width = params.thread_root_width,
+        depth = thread_depth,
+        crest_width = thread_crest_width,
+        root_width = thread_root_width,
         radius_taper = {
             bottom = {
-                start_r = 0.01,
+                start_r = tip_sharpness,
                 end_r = shaft_dia / 2,
                 start_z = 0,
                 end_z = tip_length
@@ -101,25 +140,25 @@ function create_wood_screw(params)
     }
     t_tip = shapes.thread(shaft_dia / 2, tip_thread_len, pitch, fn_shaft, false, profile_tip)
     t_tip = cad.transform("translate", t_tip, {0, 0, -shaft_len - tip_length})
-    t_tip = cad.transform("rotate", t_tip, {0, 0, 120})
+    t_tip = cad.transform("rotate", t_tip, {0, 0, 120}) -- Phase match
     
-    -- 2. MAIN THREAD: No taper, constant radius on shaft
+    -- B. Main Thread (Constant)
     main_thread_len = shaft_len - fade_len
     profile_main = {
-        depth = params.thread_depth,
-        crest_width = params.thread_crest_width,
-        root_width = params.thread_root_width,
+        depth = thread_depth,
+        crest_width = thread_crest_width,
+        root_width = thread_root_width,
         tool_func = tool_func_common
     }
     t_main = shapes.thread(shaft_dia / 2, main_thread_len, pitch, fn_shaft, false, profile_main)
     t_main = cad.transform("translate", t_main, {0, 0, -shaft_len})
     
-    -- 3. TOP THREAD: Fade out near head
+    -- C. Top Thread (Fade Out)
     top_thread_len = fade_len
     profile_top = {
-        depth = params.thread_depth,
-        crest_width = params.thread_crest_width,
-        root_width = params.thread_root_width,
+        depth = thread_depth,
+        crest_width = thread_crest_width,
+        root_width = thread_root_width,
         radius_taper = {
             top = {
                 start_r = shaft_dia / 2,
@@ -133,7 +172,7 @@ function create_wood_screw(params)
     t_top = shapes.thread(shaft_dia / 2, top_thread_len, pitch, fn_shaft, false, profile_top)
     t_top = cad.transform("translate", t_top, {0, 0, -top_thread_len})
     
-    -- Combine everything
+    -- 5. Assembly
     threaded_shaft = cad.boolean("union", {shaft, t_tip, t_main, t_top, tip})
     screw = cad.boolean("union", {head, threaded_shaft, tip})
     

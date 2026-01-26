@@ -129,6 +129,11 @@ function create_screwdriver(params)
     return driver
 end
 
+-- Allow usage as a module
+if package.loaded.import_mode == true then
+    return create_screwdriver
+end
+
 params = {
     handle_dia = 25,
     handle_len = 80,
