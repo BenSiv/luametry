@@ -475,6 +475,91 @@ static int l_warp(lua_State *L) {
   return 1;
 }
 
+// Offset removed (Not in C API)
+
+// Mirror
+static int l_mirror(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+  double nx = luaL_checknumber(L, 2);
+  double ny = luaL_checknumber(L, 3);
+  double nz = luaL_checknumber(L, 4);
+
+  ManifoldManifold *res = manifold_mirror(alloc_manifold(), m, nx, ny, nz);
+  push_manifold(L, res);
+  return 1;
+}
+
+// Trim by Plane
+static int l_trim_by_plane(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+  double nx = luaL_checknumber(L, 2);
+  double ny = luaL_checknumber(L, 3);
+  double nz = luaL_checknumber(L, 4);
+  double offset = luaL_optnumber(L, 5, 0.0);
+
+  ManifoldManifold *res =
+      manifold_trim_by_plane(alloc_manifold(), m, nx, ny, nz, offset);
+  push_manifold(L, res);
+  return 1;
+}
+
+// Split by Plane (Returns 2 manifolds: kept, removed)
+static int l_split_by_plane(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+  double nx = luaL_checknumber(L, 2);
+  double ny = luaL_checknumber(L, 3);
+  double nz = luaL_checknumber(L, 4);
+  double offset = luaL_optnumber(L, 5, 0.0);
+
+  // Allocate memory for results
+  ManifoldManifold *first = alloc_manifold();
+  ManifoldManifold *second = alloc_manifold();
+
+  // Split returns struct by value, logic writes to the memory pointers
+  manifold_split_by_plane(first, second, m, nx, ny, nz, offset);
+
+  push_manifold(L, first);
+  push_manifold(L, second);
+  return 2;
+}
+
+// Decompose (Split disjoint parts)
+static int l_decompose(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+
+  ManifoldManifoldVec *vec =
+      manifold_decompose(manifold_alloc_manifold_vec(), m);
+  size_t n = manifold_manifold_vec_length(vec);
+
+  lua_newtable(L);
+  for (size_t i = 0; i < n; ++i) {
+    // vec_get requires memory allocation for the result
+    ManifoldManifold *part =
+        manifold_manifold_vec_get(alloc_manifold(), vec, i);
+    push_manifold(L, part);
+    lua_rawseti(L, -2, i + 1);
+  }
+
+  manifold_delete_manifold_vec(vec);
+  return 1;
+}
+
+// Properties: Volume
+static int l_volume(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+  double vol = manifold_volume(m);
+  lua_pushnumber(L, vol);
+  return 1;
+}
+
+// Properties: Surface Area
+static int l_surface_area(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+  double area = manifold_surface_area(m);
+  lua_pushnumber(L, area);
+  return 1;
+}
+
 // Garbage collection
 static int l_gc(lua_State *L) {
   ManifoldManifold **ud =
@@ -504,6 +589,12 @@ static const struct luaL_Reg csg_lib[] = {{"cube", l_cube},
                                           {"translate", l_translate},
                                           {"rotate", l_rotate},
                                           {"scale", l_scale},
+                                          {"mirror", l_mirror},
+                                          {"trim_by_plane", l_trim_by_plane},
+                                          {"split_by_plane", l_split_by_plane},
+                                          {"decompose", l_decompose},
+                                          {"volume", l_volume},
+                                          {"surface_area", l_surface_area},
                                           {"to_mesh", l_to_mesh},
                                           {NULL, NULL}};
 

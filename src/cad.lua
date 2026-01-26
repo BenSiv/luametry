@@ -1,34 +1,61 @@
-
-const stl = require("stl")
-
--- Load CSG extension
+stl = require("stl")
 script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
-const csg = require("csg.manifold")
+csg = require("csg.manifold")
 
-const cad = {}
+cad = {}
 
--- Scene Graph Node Creators
+-- Internal Scene Graph Node Builders
 
-function create(type, params)
-    return {
-        type = "shape",
-        shape = type,
-        params = params or {}
-    }
+function make_shape(type, params)
+    return { type = "shape", shape = type, params = params or {} }
 end
 
-function transform(type, node, params)
-    return {
-        type = "transform",
-        transform = type,
-        params = params or {},
-        child = node
-    }
+function make_transform(type, node, params)
+    return { type = "transform", transform = type, params = params or {}, child = node }
 end
 
+function make_op(type, nodes)
+    return { type = "op", op = type, children = nodes }
+end
 
-function extrude(points, height, params)
+function make_trim(node, nx, ny, nz, offset)
+    return { type = "trim", child = node, nx=nx, ny=ny, nz=nz, offset=offset }
+end
+
+function make_manifold_node(m)
+    return { type = "manifold", manifold = m }
+end
+
+-- ============================================================================
+-- 1. Create (Generators)
+-- ============================================================================
+cad.create = {}
+
+function cad.create.cube(size, center)
+    params = { size = size, center = center }
+    return make_shape("cube", params)
+end
+
+function cad.create.cylinder(params)
+    return make_shape("cylinder", params)
+end
+
+function cad.create.sphere(r, fn)
+    params = { r = r, fn = fn }
+    return make_shape("sphere", params)
+end
+
+function cad.create.tetrahedron()
+    return make_shape("tetrahedron", {})
+end
+
+function cad.create.torus(major, minor, major_segs, minor_segs)
+    params = { major_r=major, minor_r=minor, major_segs=major_segs, minor_segs=minor_segs }
+    return make_shape("torus", params)
+end
+
+function cad.create.extrude(points, height, params)
     return {
         type = "extrude",
         points = points,
@@ -37,7 +64,7 @@ function extrude(points, height, params)
     }
 end
 
-function revolve(points, params)
+function cad.create.revolve(points, params)
     return {
         type = "revolve",
         points = points,
@@ -45,266 +72,260 @@ function revolve(points, params)
     }
 end
 
-function warp(node, warp_func)
-    return {
-        type = "warp",
-        child = node,
-        warp_func = warp_func
-    }
+-- ============================================================================
+-- 2. Modify (Transforms)
+-- ============================================================================
+cad.modify = {}
+
+function cad.modify.translate(node, v)
+    return make_transform("translate", node, v)
 end
 
-function union(nodes)
-    return {
-        type = "union",
-        children = nodes
-    }
+function cad.modify.rotate(node, v)
+    return make_transform("rotate", node, v)
 end
 
-function union_batch(nodes)
-    return {
-        type = "union_batch",
-        children = nodes
-    }
+function cad.modify.scale(node, v)
+    return make_transform("scale", node, v)
 end
 
-function intersection(nodes)
-    return {
-        type = "intersection",
-        children = nodes
-    }
+function cad.modify.mirror(node, v)
+    return make_transform("mirror", node, v)
 end
 
-function difference(nodes)
-    return {
-        type = "difference",
-        children = nodes
-    }
+function cad.modify.warp(node, func)
+    return { type = "warp", child = node, warp_func = func }
 end
 
-function minkowski(nodes)
-    return {
-        type = "minkowski",
-        children = nodes
-    }
+-- ============================================================================
+-- 3. Combine (Booleans & Topology)
+-- ============================================================================
+cad.combine = {}
+
+function cad.combine.union(nodes)
+    return make_op("union", nodes)
 end
 
-function boolean(action, nodes)
-    if type(action) != "string" then
-        error("Action must be a string.")
-    end
-    if type(nodes) != "table" then
-        error("Nodes must be a table.")
-    end
-    
-    if action == "union" then
-        return union(nodes)
-    elseif action == "intersection" then
-        return intersection(nodes)
-    elseif action == "difference" then
-        return difference(nodes)
-    elseif action == "minkowski" then
-        return minkowski(nodes)
-    elseif action == "hull" then
-        return {
-             type = "hull",
-             children = nodes
-        }
+function cad.combine.difference(a, b)
+    if type(a) == "table" and a.type and type(b) == "table" and b.type then
+        return make_op("difference", {a, b})
     else
-        error("Unknown boolean action: " .. action)
+         -- Fallback if user passes list? No, explicit API takes 2 args usually
+         -- But strict difference takes list in scene graph logic? 
+         -- Let's support list if passed
+         if type(a) == "table" and not a.type then return make_op("difference", a) end
+         return make_op("difference", {a, b})
     end
 end
 
--- Render to Manifold Object
+function cad.combine.intersection(nodes)
+    return make_op("intersection", nodes)
+end
+
+function cad.combine.hull(nodes)
+    return make_op("hull", nodes)
+end
+
+function cad.combine.minkowski(nodes)
+    return make_op("minkowski", nodes)
+end
+
+function cad.combine.trim(node, plane, offset)
+    -- plane is {nx, ny, nz}
+    return make_trim(node, plane[1], plane[2], plane[3], offset or 0)
+end
+
+-- ============================================================================
+-- 4. Query & Render Logic
+-- ============================================================================
+cad.query = {}
+
+-- Forward declaration
+-- render_node is global now
+-- function render_node(node) ... defined below
+
+-- Helper: Render to Manifold
+function cad.render(node)
+    return render_node(node)
+end
+
+function cad.query.volume(node)
+    m = render_node(node)
+    return csg.volume(m)
+end
+
+function cad.query.surface_area(node)
+    m = render_node(node)
+    return csg.surface_area(m)
+end
+
+-- Split and Decompose require immediate rendering to return multiple nodes
+function cad.combine.split(node, plane, offset)
+    m = render_node(node)
+    nx, ny, nz = plane[1], plane[2], plane[3]
+    off = offset or 0
+    -- split returns 2 manifold objects
+    m1, m2 = csg.split_by_plane(m, nx, ny, nz, off)
+    return { make_manifold_node(m1), make_manifold_node(m2) }
+end
+
+function cad.combine.decompose(node)
+    m = render_node(node)
+    parts = csg.decompose(m) -- returns table of manifolds
+    results = {}
+    for i, part in ipairs(parts) do
+        table.insert(results, make_manifold_node(part))
+    end
+    return results
+end
+
+
+-- ============================================================================
+-- Renderer Implementation
+-- ============================================================================
 
 function render_node(node)
     if node.type == "shape" then
         if node.shape == "cube" then
-            -- Aliases
-            x = node.params.x or node.params.width or 1
-            y = node.params.y or node.params.depth or 1
-            z = node.params.z or node.params.height or 1
+            p = node.params
+            -- Handle size variants
+            sz = p.size
+            x = p.x or p.width or 1
+            y = p.y or p.depth or 1
+            z = p.z or p.height or 1
             
-            size = node.params.size
-            if size != nil then
-                if type(size) == "number" then
-                    x, y, z = size, size, size
+            if sz != nil then
+                if type(sz) == "number" then
+                    x, y, z = sz, sz, sz
                 else
-                    x, y, z = size[1], size[2], size[3]
+                    x, y, z = sz[1], sz[2], sz[3]
                 end
             end
             
-            center = node.params.center or false
-            c_int = 0
-            if center then c_int = 1 end
-            return csg.cube(x, y, z, c_int)
-        
-        elseif node.shape == "cylinder" then
-            h = node.params.h or node.params.height or 1
-            r = node.params.r or node.params.radius or 1
-            r1 = node.params.r1 or node.params.radius_bottom or r
-            r2 = node.params.r2 or node.params.radius_top or r
+            c = p.center and 1 or 0
+            return csg.cube(x, y, z, c)
             
-            fn = node.params.fn or 32
-            center = node.params.center or false
-            c_int = 0
-            if center then c_int = 1 end
-            return csg.cylinder(h, r1, r2, fn, c_int)
+        elseif node.shape == "cylinder" then
+            p = node.params
+            h = p.h or p.height or 1
+            r = p.r or p.radius or 1
+            r1 = p.r1 or p.radius_bottom or r
+            r2 = p.r2 or p.radius_top or r
+            fn = p.fn or 32
+            c = p.center and 1 or 0
+            return csg.cylinder(h, r1, r2, fn, c)
             
         elseif node.shape == "sphere" then
-            r = node.params.r or node.params.radius or 1
-            fn = node.params.fn or 32
+            p = node.params
+            r = p.r or p.radius or 1
+            fn = p.fn or 32
             return csg.sphere(r, fn)
             
         elseif node.shape == "tetrahedron" then
             return csg.tetrahedron()
-            
+
         elseif node.shape == "torus" then
-            major = node.params.major_r or node.params.major_radius or 3
-            minor = node.params.minor_r or node.params.minor_radius or 1
-            major_segs = node.params.major_segs or 32
-            minor_segs = node.params.minor_segs or 16
-            return csg.torus(major, minor, major_segs, minor_segs)
+            p = node.params
+            maj = p.major_r or 3
+            min = p.minor_r or 1
+            seg_maj = p.major_segs or 32
+            seg_min = p.minor_segs or 16
+            return csg.torus(maj, min, seg_maj, seg_min)
         end
         
     elseif node.type == "transform" then
-        child_node = render_node(node.child)
-        if node.transform == "translate" then
-             v = node.params
-             return csg.translate(child_node, v[1], v[2], v[3])
-        elseif node.transform == "rotate" then
-             v = node.params
-             return csg.rotate(child_node, v[1], v[2], v[3])
-        elseif node.transform == "scale" then
-             v = node.params
-             return csg.scale(child_node, v[1], v[2], v[3])
-        end
-        return child_node
-    
-    elseif node.type == "union" then
-        if #node.children == 0 then return csg.cube(0,0,0,0) end -- Empty fallback
-        -- Optimization: Use batch union if available
-        rendered_children = {}
-        for i, child in ipairs(node.children) do
-             table.insert(rendered_children, render_node(child))
-        end
-        return csg.union_batch(rendered_children)
-
-    elseif node.type == "union_batch" then
-        if #node.children == 0 then return csg.cube(0,0,0,0) end
-        rendered_children = {}
-        for i, child in ipairs(node.children) do
-            table.insert(rendered_children, render_node(child))
-        end
-        return csg.union_batch(rendered_children)
-
-    elseif node.type == "intersection" then
-        if #node.children == 0 then return csg.cube(0,0,0,0) end
-        res = render_node(node.children[1])
-        for i = 2, #node.children do
-            next_node = render_node(node.children[i])
-            res = csg.intersection(res, next_node)
-        end
-        return res
-
-    elseif node.type == "difference" then
-        if #node.children == 0 then return csg.cube(0,0,0,0) end
-        res = render_node(node.children[1])
-        for i = 2, #node.children do
-            next_node = render_node(node.children[i])
-            res = csg.difference(res, next_node)
-        end
-        return res
-
-    elseif node.type == "minkowski" then
-        if #node.children == 0 then return csg.cube(0,0,0,0) end
-        res = render_node(node.children[1])
-        for i = 2, #node.children do
-            next_node = render_node(node.children[i])
-            res = csg.minkowski(res, next_node)
-        end
-        return res
-        
-
-    elseif node.type == "hull" then
-        if #node.children == 0 then return csg.cube(0,0,0,0) end
-        rendered_children = {}
-        for i, child in ipairs(node.children) do
-            table.insert(rendered_children, render_node(child))
-        end
-        return csg.hull(rendered_children)
-
-    elseif node.type == "extrude" then
-        points = node.points
-        height = node.height
-        slices = node.params.slices or 0
-        twist = node.params.twist or 0
-        scale_x = node.params.scale_x or 1.0
-        scale_y = node.params.scale_y or 1.0
-        
-        return csg.extrude(points, height, slices, twist, scale_x, scale_y)
-        
-    elseif node.type == "revolve" then
-        points = node.points
-        circular_segments = node.params.circular_segments or node.params.fn or 0
-        revolve_degrees = node.params.revolve_degrees or node.params.degrees or 360
-        
-        return csg.revolve(points, circular_segments, revolve_degrees)
+        child = render_node(node.child)
+        t = node.transform
+        v = node.params
+        if t == "translate" then return csg.translate(child, v[1], v[2], v[3]) end
+        if t == "rotate" then return csg.rotate(child, v[1], v[2], v[3]) end
+        if t == "scale" then return csg.scale(child, v[1], v[2], v[3]) end
+        if t == "mirror" then return csg.mirror(child, v[1], v[2], v[3]) end
+        return child
         
     elseif node.type == "warp" then
-        child_node = render_node(node.child)
-        warp_func = node.warp_func
+        return csg.warp(render_node(node.child), node.warp_func)
+    
+    elseif node.type == "trim" then
+        return csg.trim_by_plane(render_node(node.child), node.nx, node.ny, node.nz, node.offset)
         
-        return csg.warp(child_node, warp_func)
+    elseif node.type == "manifold" then
+        -- This node wraps an already computed Manifold object
+        return node.manifold
+
+    elseif node.type == "op" or node.type == "union" or node.type == "union_batch" or node.type == "difference" or node.type == "intersection" or node.type == "hull" or node.type == "minkowski" then
+        -- Handle both old and new style op nodes
+        op = node.op or node.type
+        children = node.children
+        
+        if #children == 0 then return csg.cube(0,0,0,0) end
+        
+        if op == "union" or op == "union_batch" then
+             rendered = {}
+             for _, c in ipairs(children) do table.insert(rendered, render_node(c)) end
+             return csg.union_batch(rendered)
+             
+        elseif op == "intersection" then
+             res = render_node(children[1])
+             for i=2,#children do res = csg.intersection(res, render_node(children[i])) end
+             return res
+             
+        elseif op == "difference" then
+             res = render_node(children[1])
+             for i=2,#children do res = csg.difference(res, render_node(children[i])) end
+             return res
+
+        elseif op == "minkowski" then
+             res = render_node(children[1])
+             for i=2,#children do res = csg.minkowski(res, render_node(children[i])) end
+             return res
+
+        elseif op == "hull" then
+             rendered = {}
+             for _, c in ipairs(children) do table.insert(rendered, render_node(c)) end
+             return csg.hull(rendered)
+        end
+        
+    elseif node.type == "extrude" then
+         return csg.extrude(node.points, node.height, node.params.slices or 0, node.params.twist or 0, node.params.scale_x or 1, node.params.scale_y or 1)
+         
+    elseif node.type == "revolve" then
+         return csg.revolve(node.points, node.params.circular_segments or 0, node.params.revolve_degrees or 360)
     end
     
     error("Unknown node type: " .. tostring(node.type))
 end
 
+-- ============================================================================
+-- Export
+-- ============================================================================
 function geometry_to_stl_solid(mesh)
     solid = stl.create_solid("csg_export")
     vertices = mesh.verts
     faces = mesh.faces
     
     for i, face in ipairs(faces) do
-        -- face is {i1, i2, i3} (1-based indices)
-        i1 = face[1]
-        i2 = face[2]
-        i3 = face[3]
+        v1 = vertices[face[1]]
+        v2 = vertices[face[2]]
+        v3 = vertices[face[3]]
         
-        v1 = vertices[i1]
-        v2 = vertices[i2]
-        v3 = vertices[i3]
+        -- Normal calc
+        ux, uy, uz = v2[1]-v1[1], v2[2]-v1[2], v2[3]-v1[3]
+        vx, vy, vz = v3[1]-v1[1], v3[2]-v1[2], v3[3]-v1[3]
+        nx, ny, nz = uy*vz - uz*vy, uz*vx - ux*vz, ux*vy - uy*vx
         
-        -- Calculate normal
-        ux = v2[1] - v1[1]
-        uy = v2[2] - v1[2]
-        uz = v2[3] - v1[3]
-        vx = v3[1] - v1[1]
-        vy = v3[2] - v1[2]
-        vz = v3[3] - v1[3]
-        
-        nx = uy*vz - uz*vy
-        ny = uz*vx - ux*vz
-        nz = ux*vy - uy*vx
-        
-        -- Normalize
         len = math.sqrt(nx*nx + ny*ny + nz*nz)
-        if len > 0 then
-            nx = nx/len; ny = ny/len; nz = nz/len
-        end
+        if len > 0 then nx=nx/len; ny=ny/len; nz=nz/len end
         
         solid = stl.add_facet(solid, {nx, ny, nz}, v1, v2, v3)
     end
     return solid
 end
 
-function export(node, filename)
+function cad.export(node, filename)
     man = render_node(node)
     mesh = csg.to_mesh(man)
-    
-    if mesh == nil then
-        return false
-    end
+    if mesh == nil then return false end
     
     solid = geometry_to_stl_solid(mesh)
     content = stl.encode_solid(solid)
@@ -318,23 +339,32 @@ function export(node, filename)
     return false
 end
 
-function round(shape, r, fn)
-    s = create("sphere", {r=r, fn=fn})
-    return boolean("minkowski", {shape, s})
-end
+-- ============================================================================
+-- Flat Aliases (Backward Compatibility)
+-- ============================================================================
+cad.cube = cad.create.cube
+cad.cylinder = cad.create.cylinder
+cad.sphere = cad.create.sphere
+cad.tetrahedron = cad.create.tetrahedron
+cad.torus = cad.create.torus
+cad.extrude = cad.create.extrude
+cad.revolve = cad.create.revolve
 
+cad.translate = cad.modify.translate
+cad.rotate = cad.modify.rotate
+cad.scale = cad.modify.scale
+cad.warp = cad.modify.warp
+cad.mirror = cad.modify.mirror
 
-
-cad.create = create
-cad.transform = transform
-cad.boolean = boolean
-cad.export = export
-cad.round = round
-cad.extrude = extrude
-cad.union = union
-cad.union_batch = union_batch
-cad.revolve = revolve
-cad.warp = warp
-
+cad.union = cad.combine.union
+cad.union_batch = function(nodes) return cad.combine.union(nodes) end
+cad.difference = cad.combine.difference
+cad.intersection = cad.combine.intersection
+cad.hull = cad.combine.hull
+cad.minkowski = cad.combine.minkowski
+-- Legacy helpers
+cad.create_legacy = make_shape
+cad.transform_legacy = make_transform
+cad.boolean_legacy = make_op
 
 return cad
