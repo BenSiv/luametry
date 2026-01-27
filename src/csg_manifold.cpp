@@ -369,6 +369,74 @@ static int l_to_mesh(lua_State *L) {
   return 1;
 }
 
+// From Mesh (verts, faces)
+static int l_from_mesh(lua_State *L) {
+  if (!lua_istable(L, 1))
+    luaL_error(L, "Expected table of vertices");
+  if (!lua_istable(L, 2))
+    luaL_error(L, "Expected table of faces");
+
+  // Read Vertices
+  int n_verts = lua_objlen(L, 1);
+  float *verts = (float *)malloc(n_verts * 3 * sizeof(float));
+  for (int i = 0; i < n_verts; ++i) {
+    lua_rawgeti(L, 1, i + 1);
+
+    lua_rawgeti(L, -1, 1);
+    verts[i * 3 + 0] = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_rawgeti(L, -1, 2);
+    verts[i * 3 + 1] = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_rawgeti(L, -1, 3);
+    verts[i * 3 + 2] = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_pop(L, 1); // pop vertex table
+  }
+
+  // Read Faces
+  int n_tris = lua_objlen(L, 2);
+  uint32_t *tris = (uint32_t *)malloc(n_tris * 3 * sizeof(uint32_t));
+  for (int i = 0; i < n_tris; ++i) {
+    lua_rawgeti(L, 2, i + 1);
+
+    lua_rawgeti(L, -1, 1);
+    tris[i * 3 + 0] =
+        (uint32_t)(lua_tonumber(L, -1) - 1); // Lua 1-based to 0-based
+    lua_pop(L, 1);
+
+    lua_rawgeti(L, -1, 2);
+    tris[i * 3 + 1] = (uint32_t)(lua_tonumber(L, -1) - 1);
+    lua_pop(L, 1);
+
+    lua_rawgeti(L, -1, 3);
+    tris[i * 3 + 2] = (uint32_t)(lua_tonumber(L, -1) - 1);
+    lua_pop(L, 1);
+
+    lua_pop(L, 1); // pop face table
+  }
+
+  // Create MeshGL
+  ManifoldMeshGL *mesh =
+      manifold_meshgl(manifold_alloc_meshgl(), verts, n_verts, 3, tris, n_tris);
+
+  // Convert to Manifold
+  ManifoldManifold *m = manifold_of_meshgl(alloc_manifold(), mesh);
+
+  // Cleanup
+  free(verts);
+  free(tris);
+
+  manifold_destruct_meshgl(mesh);
+  free(mesh);
+
+  push_manifold(L, m);
+  return 1;
+}
+
 // Revolve
 static int l_revolve(lua_State *L) {
   if (!lua_istable(L, 1)) {
@@ -596,6 +664,7 @@ static const struct luaL_Reg csg_lib[] = {{"cube", l_cube},
                                           {"volume", l_volume},
                                           {"surface_area", l_surface_area},
                                           {"to_mesh", l_to_mesh},
+                                          {"from_mesh", l_from_mesh},
                                           {NULL, NULL}};
 
 extern "C" int luaopen_csg_manifold(lua_State *L) {

@@ -58,6 +58,40 @@ function cad.create.torus(major, minor, major_segs, minor_segs)
     return make_shape("torus", params)
 end
 
+function cad.create.from_mesh(verts, faces)
+    return { type = "from_mesh", verts = verts, faces = faces }
+end
+
+function cad.create.from_stl(filename)
+    -- Load STL
+    solid = stl.load_ascii(filename)
+    if solid == nil then error("Failed to load STL: " .. filename) end
+    
+    verts = {}
+    faces = {}
+    vert_map = {} -- dedup vertices
+    next_idx = 1
+    
+    get_vert_idx = function(v)
+        key = string.format("%.6f,%.6f,%.6f", v.x, v.y, v.z)
+        if vert_map[key] != nil then return vert_map[key] end
+        
+        table.insert(verts, {v.x, v.y, v.z})
+        vert_map[key] = next_idx
+        next_idx = next_idx + 1
+        return next_idx - 1
+    end
+    
+    for _, facet in ipairs(solid.facets) do
+        v1 = get_vert_idx(facet.vertices[1])
+        v2 = get_vert_idx(facet.vertices[2])
+        v3 = get_vert_idx(facet.vertices[3])
+        table.insert(faces, {v1, v2, v3})
+    end
+    
+    return cad.create.from_mesh(verts, faces)
+end
+
 function cad.create.extrude(points, height, params)
     if type(points) == "table" and points.points != nil then
          return { type = "extrude", points = points.points, height = points.height, params = points or {} }
@@ -249,6 +283,9 @@ function render_node(node)
             return csg.torus(maj, min, seg_maj, seg_min)
         end
         
+    elseif node.type == "from_mesh" then
+        return csg.from_mesh(node.verts, node.faces)
+
     elseif node.type == "transform" then
         child = render_node(node.child)
         t = node.transform
@@ -365,6 +402,8 @@ cad.tetrahedron = cad.create.tetrahedron
 cad.torus = cad.create.torus
 cad.extrude = cad.create.extrude
 cad.revolve = cad.create.revolve
+cad.from_mesh = cad.create.from_mesh
+cad.from_stl = cad.create.from_stl
 
 cad.translate = cad.modify.translate
 cad.rotate = cad.modify.rotate
