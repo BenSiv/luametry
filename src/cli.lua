@@ -142,7 +142,7 @@ end
 
 function cli.safe_dofile(path)
     ok, res = xpcall(function() return dofile(path) end, cli.error_handler)
-    if not ok then
+    if ok == false then
         print("\n" .. string.rep("-", 40))
         print("LUAMETRY SCRIPT ERROR")
         print(string.rep("-", 40))
@@ -353,7 +353,7 @@ function cli.do_install(cmd_args)
     -- But since we are likely running FROM the binary, we can try to find where we are.
     -- Easiest is to assume we are in the project root if running 'luametry install'
     source = "bin/luametry"
-    if not lfs.attributes(source) then
+    if lfs.attributes(source) == nil then
         print("Error: Could not find binary at " .. source)
         print("Ensure you are running this from the project root.")
         return "error"
