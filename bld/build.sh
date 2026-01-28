@@ -69,6 +69,9 @@ cp src/shapes.lua .
 cp src/stl.lua .
 cp src/step.lua .
 cp src/obj.lua .
+cp src/threemf.lua .
+cp src/font.lua .
+cp src/ascii.lua .
 cp src/cli.lua .
 
 # Copy lib/ subdirectory (argparse and deps)
@@ -80,7 +83,7 @@ cp obj/lfs.a ./lfs.a
 
 echo "Generating static binary with luastatic"
 export CC=g++
-luam $LUAM_DIR/lib/static/static.lua entry.lua cad.lua shapes.lua stl.lua step.lua obj.lua cli.lua \
+luam $LUAM_DIR/lib/static/static.lua entry.lua cad.lua shapes.lua stl.lua step.lua obj.lua threemf.lua font.lua ascii.lua cli.lua \
     lib/argparse.lua lib/utils.lua lib/dataframes.lua lib/string_utils.lua lib/table_utils.lua \
     csg_manifold.a lfs.a $LIB_LUA $INC_LUA $LIB_MANIFOLD_FLAGS $LIBS
 
@@ -88,7 +91,7 @@ echo "Finalizing"
 mkdir -p bin && mv entry bin/$PROJECT
 
 echo "Cleanup"
-rm -f cad.lua shapes.lua stl.lua step.lua obj.lua cli.lua csg_manifold.a lfs.a entry.static.c
+rm -f cad.lua shapes.lua stl.lua step.lua obj.lua threemf.lua font.lua ascii.lua cli.lua csg_manifold.a lfs.a entry.static.c
 rm -rf lib/
 
 echo "Build complete."

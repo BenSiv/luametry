@@ -1,6 +1,9 @@
 stl = require("stl")
 step = require("step")
 obj = require("obj")
+threemf = require("threemf")
+font = require("font")
+ascii = require("ascii")
 script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
 csg = require("csg.manifold")
@@ -128,6 +131,10 @@ function cad.create.revolve(points, params)
     }
 end
 
+function cad.create.text(text_str, params)
+    return font.create_text(text_str, params)
+end
+
 -- ============================================================================
 -- 2. Modify (Transforms)
 -- ============================================================================
@@ -220,6 +227,13 @@ end
 function cad.query.surface_area(node)
     m = render_node(node)
     return csg.surface_area(m)
+end
+
+function cad.query.preview(node, width, height)
+    man = render_node(node)
+    mesh = csg.to_mesh(man)
+    if mesh == nil then return "" end
+    return ascii.render_mesh(mesh, width, height)
 end
 
 -- Split and Decompose require immediate rendering to return multiple nodes
@@ -396,6 +410,10 @@ function cad.export(node, filename)
     content = nil
     if (string.match(filename, "%.step$") != nil) or (string.match(filename, "%.stp$") != nil) then
         content = step.encode_mesh(mesh)
+    elseif string.match(filename, "%.obj$") != nil then
+        content = obj.encode_mesh(mesh)
+    elseif string.match(filename, "%.3mf$") != nil then
+        return threemf.export(mesh, filename)
     else
         solid = geometry_to_stl_solid(mesh)
         content = stl.encode_solid(solid)
@@ -423,6 +441,7 @@ cad.revolve = cad.create.revolve
 cad.from_mesh = cad.create.from_mesh
 cad.from_stl = cad.create.from_stl
 cad.from_obj = cad.create.from_obj
+cad.text = cad.create.text
 
 cad.translate = cad.modify.translate
 cad.rotate = cad.modify.rotate

@@ -90,6 +90,8 @@ function test_mesh_and_stl()
     cad.export(mesh_node, "out/temp_unit.obj")
     obj_node = cad.create.from_obj("out/temp_unit.obj")
     obj_alias = cad.from_obj("out/temp_unit.obj")
+    -- 3MF Export
+    cad.export(mesh_node, "out/temp_unit.3mf")
 end
 
 function test_remaining_transforms()
@@ -150,10 +152,12 @@ function test_all_variants()
     v = cad.create.revolve({{10,0},{11,0},{10,1}})
     v = cad.create.from_obj("out/temp_unit.obj")
     v = cad.create.from_stl("out/temp_unit.stl")
+    v = cad.create.text("ABC")
     
     -- Cleanup
     os.remove("out/temp_unit.stl")
     os.remove("out/temp_unit.obj")
+    os.remove("out/temp_unit.3mf")
     
     -- Modifiers
     v = cad.modify.translate(v, {1,0,0})
@@ -162,6 +166,18 @@ function test_all_variants()
     v = cad.modify.mirror(v, {1,0,0})
     v = cad.modify.warp(v, function(x,y,z) return x,y,z end)
     v = cad.modify.round(v, 0.1)
+end
+
+function test_text()
+    print("Testing Text Extrusion...")
+    t = cad.text("CAD", {h=10, t=1, z=2})
+    if t == nil then error("cad.text failed") end
+    vol = cad.query.volume(t)
+    if vol <= 0 then error("cad.text volume too small") end
+    
+    -- Preview
+    p = cad.query.preview(t, 20, 10)
+    if #p == 0 then error("cad.query.preview failed") end
 end
 
 -- Run them
@@ -175,6 +191,7 @@ test_render()
 test_advanced_ops()
 test_queries()
 test_all_variants()
+test_text()
 
 print("\nUnit core tests completed successfully.")
 return true
