@@ -371,12 +371,12 @@ function cli.do_install(cmd_args)
             print("Initializing config: " .. settings_file)
             f = io.open(settings_file, "w")
             if f != nil then
-                f:write("return {\n")
-                f:write("    -- Default 3D viewer\n")
-                f:write("    viewer = \"f3d\",\n")
-                f:write("    -- Arguments passed to viewer in live mode\n")
-                f:write("    viewer_args = \"--up +Z --resolution 1200,800\"\n")
-                f:write("}\n")
+                io.write(f, "return {\n")
+                io.write(f, "    -- Default 3D viewer\n")
+                io.write(f, "    viewer = \"f3d\",\n")
+                io.write(f, "    -- Arguments passed to viewer in live mode\n")
+                io.write(f, "    viewer_args = \"--up +Z --resolution 1200,800\"\n")
+                io.write(f, "}\n")
                 io.close(f)
             end
         else
