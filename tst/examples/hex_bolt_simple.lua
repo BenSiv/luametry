@@ -41,4 +41,4 @@ threaded_shaft = cad.combine.difference({shaft, thread_cutter})
 -- 5. Final Assembly
 bolt = cad.combine.union({head, threaded_shaft})
 
-cad.export(bolt, "out/hex_bolt_simple.stl")
+return bolt

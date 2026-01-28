@@ -228,7 +228,4 @@ print("Generating Wood Screw with params:")
 for k, v in pairs(params) do print("  " .. k .. ": " .. v) end
 
 screw = create_wood_screw(params)
-
-print("Exporting...")
-cad.export(screw, "out/wood_screw.stl")
-print("Done: out/wood_screw.stl")
+return screw

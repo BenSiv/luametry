@@ -420,9 +420,4 @@ benchy = cad.combine.union({
 -- Rounding the entire model (Minkowski sum with sphere)
 -- benchy = cad.modify.round(benchy, 0.2, 32)
 
-print("Exporting 3DBenchy...")
-if cad.export(benchy, "out/benchy.stl") then
-    print("Success: out/benchy.stl")
-else
-    print("Failure")
-end
+return benchy

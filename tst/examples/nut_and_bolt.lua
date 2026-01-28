@@ -69,6 +69,4 @@ nut = cad.modify.rotate( nut, {0, 0, 30})
 
 assembly = cad.combine.union( {bolt, nut})
 
-print("Exporting Assembly...")
-cad.export(assembly, "out/nut_and_bolt.stl")
-print("Done: out/nut_and_bolt.stl")
+return assembly

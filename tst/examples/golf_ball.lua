@@ -96,10 +96,4 @@ end
 table.insert(dimples, 1, golf_ball) -- Prepend the main ball
 golf_ball = cad.combine.difference(dimples)
 
-output_file = "out/golf_ball.stl"
-print("Exporting Golf Ball")
-if cad.export(golf_ball, output_file) then
-    print("Success: " .. output_file)
-else
-    print("Failure")
-end
+return golf_ball

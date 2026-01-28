@@ -110,6 +110,4 @@ params = {
 
 print("Generating Hex Nut...")
 nut = create_hex_nut(params)
-print("Exporting...")
-cad.export(nut, "out/hex_nut.stl")
-print("Done: out/hex_nut.stl")
+return nut

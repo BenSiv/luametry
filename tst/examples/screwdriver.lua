@@ -147,6 +147,4 @@ params = {
 
 print("Generating Screwdriver...")
 driver = create_screwdriver(params)
-print("Exporting...")
-cad.export(driver, "out/screwdriver.stl")
-print("Done: out/screwdriver.stl")
+return driver
