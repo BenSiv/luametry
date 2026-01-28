@@ -255,15 +255,46 @@ function cli.do_run(cmd_args)
         end
     end
     
-    script = cmd_args[1]
+    script = nil
+    output_path = nil
+    
+    i = 1
+    while i <= #cmd_args do
+        a = cmd_args[i]
+        if a == "-o" or a == "--output" then
+            output_path = cmd_args[i + 1]
+            i = i + 2
+        else
+            if script == nil then
+                script = a
+            end
+            i = i + 1
+        end
+    end
     
     if script == nil then
         print("Error: No script specified")
         print(cli.get_help("luametry run"))
         return "error"
     end
+
+    res = cli.safe_dofile(script)
+    if res == nil then return "error" end
     
-    if cli.safe_dofile(script) == nil then return "error" end
+    -- If script returns a shape, export it
+    if type(res) == "table" and res.type != nil then
+        if output_path == nil then
+            basename = string.match(script, "([^/]+)%.lua$") or "output"
+            output_path = "out/" .. basename .. ".stl"
+        end
+        cad_mod = require("cad")
+        print("Exporting to " .. output_path .. "...")
+        if cad_mod.export(res, output_path) == false then
+            return "error"
+        end
+        print("Success.")
+    end
+    
     return "success"
 end
 
@@ -307,8 +338,17 @@ function cli.do_live(cmd_args)
     basename = string.match(script, "([^/]+)%.lua$") or "output"
     output_file = "out/" .. basename .. ".stl"
     
+    -- Function to build and export
+    function build_and_export()
+        res = cli.safe_dofile(script)
+        if type(res) == "table" and res.type != nil then
+            cad_mod = require("cad")
+            cad_mod.export(res, output_file)
+        end
+    end
+
     -- Initial build
-    if cli.safe_dofile(script) == nil then return "error" end
+    build_and_export()
     
     -- Launch viewer in background
     viewer_cmd = viewer .. " " .. cli.config.viewer_args .. " " .. output_file .. " &"
@@ -317,29 +357,6 @@ function cli.do_live(cmd_args)
     
     -- Give viewer time to start
     os.execute("sleep 0.5")
-    
-    -- Get viewer PID to monitor
-    viewer_pid_cmd = "pgrep -n " .. viewer
-    viewer_pid = nil
-    
-    -- Watch files for changes
-    files = {
-        "src/cad.lua",
-        "src/shapes.lua", 
-        "src/stl.lua",
-        script
-    }
-    
-    function get_mtimes(paths)
-        mtimes = {}
-        for _, path in ipairs(paths) do
-            attr = lfs.attributes(path)
-            if attr != nil then
-                mtimes[path] = attr.modification
-            end
-        end
-        return mtimes
-    end
     
     function viewer_running()
         ret = os.execute("pgrep -x " .. viewer .. " > /dev/null 2>&1")
@@ -360,7 +377,7 @@ function cli.do_live(cmd_args)
         for path, mtime in pairs(current_mtimes) do
             if last_mtimes[path] != mtime then
                 print("Changed: " .. path .. " - Rebuilding...")
-                cli.safe_dofile(script)
+                build_and_export()
                 changed = true
                 break
             end
@@ -370,7 +387,7 @@ function cli.do_live(cmd_args)
              for path, _ in pairs(last_mtimes) do
                 if current_mtimes[path] == nil then
                     print("File removed - Rebuilding...")
-                    cli.safe_dofile(script)
+                    build_and_export()
                     changed = true
                     break
                 end
