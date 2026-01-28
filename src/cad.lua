@@ -160,11 +160,13 @@ function cad.modify.warp(node, func)
     return { type = "warp", child = node, warp_func = func }
 end
 
-function cad.modify.round(node, r, fn)
+function cad.modify.fillet(node, r, fn)
     params = { r = r, fn = fn }
     s = make_shape("sphere", params)
     return make_op("minkowski", {node, s})
 end
+
+cad.modify.round = cad.modify.fillet
 
 function cad.modify.chamfer(node, size)
     -- Minkowski with a small octahedron/tetrahedron/cube for flat bevels
@@ -173,7 +175,6 @@ function cad.modify.chamfer(node, size)
     return make_op("minkowski", {node, s})
 end
 
-cad.modify.fillet = cad.modify.round
 cad.modify.bevel = cad.modify.chamfer
 
 -- ============================================================================
@@ -452,8 +453,8 @@ cad.rotate = cad.modify.rotate
 cad.scale = cad.modify.scale
 cad.warp = cad.modify.warp
 cad.mirror = cad.modify.mirror
-cad.round = cad.modify.round
-cad.fillet = cad.modify.round
+cad.fillet = cad.modify.fillet
+cad.round = cad.modify.fillet
 cad.chamfer = cad.modify.chamfer
 cad.bevel = cad.modify.chamfer
 
