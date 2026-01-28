@@ -118,8 +118,7 @@ Updates Luametry by pulling latest from git and rebuilding.
 Does not automatically install to system path.
 
 Examples:
-luametry preview tst/examples/hex_bolt.lua
-luametry preview tst/examples/hex_bolt.lua --width 100 --height 50
+luametry update
     """,
     ["luametry screenshot"] = """
 Description:
@@ -570,56 +569,6 @@ function cli.do_update(cmd_args)
     end
 end
 
--- Preview command
-function cli.do_preview(cmd_args)
-    -- Check for help flags first
-    for _, a in ipairs(cmd_args) do
-        if a == "-h" or a == "--help" then
-            print(cli.get_help("luametry preview"))
-            return "success"
-        end
-    end
-    
-    script = nil
-    width = 80
-    height = 40
-    
-    i = 1
-    while i <= #cmd_args do
-        a = cmd_args[i]
-        if a == "--width" then
-            width = tonumber(cmd_args[i + 1])
-            i = i + 2
-        elseif a == "--height" then
-            height = tonumber(cmd_args[i + 1])
-            i = i + 2
-        else
-            if script == nil then
-                script = a
-            end
-            i = i + 1
-        end
-    end
-    
-    if script == nil then
-        print("Error: No script specified")
-        print(cli.get_help("luametry preview"))
-        return "error"
-    end
-    
-    res = cli.safe_dofile(script)
-    if res == nil then return "error" end
-    
-    if type(res) == "table" and res.type != nil then
-        cad_mod = require("cad")
-        print(cad_mod.query.preview(res, width, height))
-        return "success"
-    else
-        print("Error: Script did not return a shape.")
-        return "error"
-    end
-end
-
 -- Screenshot command
 function cli.do_screenshot(cmd_args)
     -- Check for help flags first
@@ -712,7 +661,6 @@ function cli.main()
         ["export"] = cli.do_export,
         ["install"] = cli.do_install,
         ["update"] = cli.do_update,
-        ["preview"] = cli.do_preview,
         ["screenshot"] = cli.do_screenshot
     }
     

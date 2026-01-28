@@ -19,7 +19,8 @@
 - [x] `update` command to pull and rebuild
 - [x] **3MF export** support
 - [x] **Text/font extrusion** support (`cad.text`)
-- [x] **ASCII terminal preview** (`luametry preview`)
+- [x] **PNG Screenshot support** (`luametry screenshot`)
+- [x] ~~ASCII terminal preview~~ (Replaced by high-quality screenshot)
 
 ## Future Improvements
 - [ ] Support for multiple CAD kernels (OpenCascade, etc.)

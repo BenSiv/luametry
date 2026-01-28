@@ -3,7 +3,6 @@ step = require("step")
 obj = require("obj")
 threemf = require("threemf")
 font = require("font")
-ascii = require("ascii")
 script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
 csg = require("csg.manifold")
@@ -229,12 +228,7 @@ function cad.query.surface_area(node)
     return csg.surface_area(m)
 end
 
-function cad.query.preview(node, width, height)
-    man = render_node(node)
-    mesh = csg.to_mesh(man)
-    if mesh == nil then return "" end
-    return ascii.render_mesh(mesh, width, height)
-end
+-- Split and Decompose
 
 -- Split and Decompose require immediate rendering to return multiple nodes
 function cad.combine.split(node, plane, offset)

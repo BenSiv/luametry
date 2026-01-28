@@ -174,10 +174,6 @@ function test_text()
     if t == nil then error("cad.text failed") end
     vol = cad.query.volume(t)
     if vol <= 0 then error("cad.text volume too small") end
-    
-    -- Preview
-    p = cad.query.preview(t, 20, 10)
-    if #p == 0 then error("cad.query.preview failed") end
 end
 
 -- Run them
