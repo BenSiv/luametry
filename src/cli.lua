@@ -11,6 +11,27 @@ cli.config = {
     viewer_args = "--up +Z --resolution 1200,800"
 }
 
+-- Load config file
+function cli.load_config()
+    paths = {
+        os.getenv("HOME") .. "/.config/luametry.conf",
+        ".luametry.conf"
+    }
+    for _, path in ipairs(paths) do
+        f = io.open(path, "r")
+        if f != nil then
+            io.close(f)
+            cfg = dofile(path)
+            if type(cfg) == "table" then
+                for k, v in pairs(cfg) do
+                    cli.config[k] = v
+                end
+            end
+        end
+    end
+end
+cli.load_config()
+
 -- Help strings for each command
 cli.help_strings = {
     ["luametry"] = """
@@ -61,6 +82,14 @@ Required:
 Examples:
 luametry export tst/benchy.lua -o out/result.stl
 luametry export tst/bolt.lua -o out/bolt.step
+    """,
+    ["luametry install"] = """
+Description:
+Installs the luametry binary to /usr/local/bin/luametry.
+Requires sudo/administrative privileges.
+
+Examples:
+sudo luametry install
     """
 }
 
@@ -106,6 +135,24 @@ function cli.watch_loop(script, on_change)
     end
 end
 
+-- Custom error handler for xpcall
+function cli.error_handler(err)
+    return debug.traceback(err, 2)
+end
+
+function cli.safe_dofile(path)
+    ok, res = xpcall(function() return dofile(path) end, cli.error_handler)
+    if not ok then
+        print("\n" .. string.rep("-", 40))
+        print("LUAMETRY SCRIPT ERROR")
+        print(string.rep("-", 40))
+        print(res)
+        print(string.rep("-", 40) .. "\n")
+        return nil, res
+    end
+    return res
+end
+
 -- Run a script
 function cli.do_run(cmd_args)
     -- Check for help flags first
@@ -124,7 +171,7 @@ function cli.do_run(cmd_args)
         return "error"
     end
     
-    dofile(script)
+    if cli.safe_dofile(script) == nil then return "error" end
     return "success"
 end
 
@@ -169,7 +216,7 @@ function cli.do_live(cmd_args)
     output_file = "out/" .. basename .. ".stl"
     
     -- Initial build
-    dofile(script)
+    if cli.safe_dofile(script) == nil then return "error" end
     
     -- Launch viewer in background
     viewer_cmd = viewer .. " " .. cli.config.viewer_args .. " " .. output_file .. " &"
@@ -217,10 +264,7 @@ function cli.do_live(cmd_args)
         for path, mtime in pairs(current_mtimes) do
             if last_mtimes[path] != mtime then
                 print("Changed: " .. path .. " - Rebuilding...")
-                ok, err = pcall(dofile, script)
-                if not ok then
-                    print("Error: " .. tostring(err))
-                end
+                cli.safe_dofile(script)
                 last_mtimes = current_mtimes
                 break
             end
@@ -294,12 +338,47 @@ function cli.do_export(cmd_args)
     end
 end
 
+-- Install command
+function cli.do_install(cmd_args)
+    -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry install"))
+            return "success"
+        end
+    end
+
+    print("Installing Luametry to /usr/local/bin/luametry...")
+    -- Determine source path (bin/luametry relative to this script maybe?)
+    -- But since we are likely running FROM the binary, we can try to find where we are.
+    -- Easiest is to assume we are in the project root if running 'luametry install'
+    source = "bin/luametry"
+    if not lfs.attributes(source) then
+        print("Error: Could not find binary at " .. source)
+        print("Ensure you are running this from the project root.")
+        return "error"
+    end
+
+    cmd = "cp " .. source .. " /usr/local/bin/luametry"
+    print("Running: " .. cmd)
+    ret = os.execute(cmd)
+    
+    if ret == 0 or ret == true then
+        print("Successfully installed luametry.")
+        return "success"
+    else
+        print("Installation failed. Did you run with sudo?")
+        return "error"
+    end
+end
+
 -- Main entry point
 function cli.main()
     command_funcs = {
         ["run"] = cli.do_run,
         ["live"] = cli.do_live,
-        ["export"] = cli.do_export
+        ["export"] = cli.do_export,
+        ["install"] = cli.do_install
     }
     
     command = arg[1]

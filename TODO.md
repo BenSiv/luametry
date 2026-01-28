@@ -5,19 +5,20 @@
 - [x] CLI with `run`, `watch`, `live` commands
 - [x] `--viewer` option and `LUAMETRY_VIEWER` env var
 - [x] License alignment verified (MIT compatible)
-- [x] **STEP export support** (AP214 compliant)
-- [x] **Automated test suite** with 100% feature coverage
-- [x] **STL import** (`from_stl`) for boolean operations
-- [x] **CLI `--output` flag** to override default output path
-- [x] **Refactored API** (removed legacy/redundant features)
+- [x] STEP export support (AP214 compliant)
+- [x] Automated test suite with 100% feature coverage
+- [x] STL import (`from_stl`) for boolean operations
+- [x] CLI `--output` flag to override default output path
+- [x] Refactored API (removed legacy/redundant features)
+- [x] CLI `install` command support
+- [x] Config file support (`~/.config/luametry.conf`)
+- [x] Improved error reporting with line numbers
 
 ## Future Improvements
 - [ ] Support additional export formats (OBJ, 3MF)
-- [ ] Add `install` command to automate binary copying
 - [ ] Improve watch mode to detect new files
 - [ ] Add unit tests for CLI parsing
-- [ ] Support config file (`luametry.conf`) for default settings
-- [ ] Improve error messages with line numbers
+- [ ] Add `update` command to pull latest and rebuild
 
 ## Potential Features
 - [ ] Import OBJ files for boolean operations
