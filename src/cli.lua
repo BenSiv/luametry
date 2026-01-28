@@ -11,10 +11,30 @@ cli.config = {
     viewer_args = "--up +Z --resolution 1200,800"
 }
 
+-- Helper to get the real home directory (handles sudo)
+function cli.get_real_home()
+    h = os.getenv("HOME")
+    su = os.getenv("SUDO_USER")
+    if su != nil and su != "" then
+        tmp = "/tmp/luam_home"
+        os.execute("getent passwd " .. su .. " | cut -d: -f6 > " .. tmp)
+        f = io.open(tmp, "r")
+        if f != nil then
+            rh = f:read("*l")
+            io.close(f)
+            os.remove(tmp)
+            if rh != nil and rh != "" then
+                return rh
+            end
+        end
+    end
+    return h
+end
+
 -- Load config file
 function cli.load_config()
     paths = {
-        os.getenv("HOME") .. "/.config/luametry/settings.lua",
+        cli.get_real_home() .. "/.config/luametry/settings.lua",
         ".luametry.conf"
     }
     for _, path in ipairs(paths) do
@@ -358,7 +378,7 @@ function cli.do_install(cmd_args)
     end
 
     -- 1. Setup global config
-    home = os.getenv("HOME")
+    home = cli.get_real_home()
     if home != nil then
         config_dir = home .. "/.config/luametry"
         settings_file = config_dir .. "/settings.lua"
