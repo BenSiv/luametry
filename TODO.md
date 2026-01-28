@@ -20,7 +20,7 @@
 - [x] **3MF export** support
 - [x] **Text/font extrusion** support (`cad.text`)
 - [x] **PNG Screenshot support** (`luametry screenshot`)
-- [x] ~~ASCII terminal preview~~ (Replaced by high-quality screenshot)
+- [x] **Fillet & Chamfer** support (`cad.fillet`, `cad.chamfer`)
 
 ## Future Improvements
 - [ ] Support for multiple CAD kernels (OpenCascade, etc.)
@@ -29,6 +29,5 @@
 - [ ] Support for texture coordinates in OBJ export
 
 ## Potential Features
-- [ ] Chamfer/Fillet operations (2D & 3D)
 - [ ] STL repair/optimization utilities
 - [ ] SVG import support

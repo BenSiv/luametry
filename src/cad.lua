@@ -166,6 +166,15 @@ function cad.modify.round(node, r, fn)
     return make_op("minkowski", {node, s})
 end
 
+function cad.modify.chamfer(node, size)
+    -- Minkowski with a small octahedron/tetrahedron/cube for flat bevels
+    -- Using a cube (center=true) creates a chamfer-like effect
+    s = make_shape("cube", {size = size, center = true})
+    return make_op("minkowski", {node, s})
+end
+
+cad.modify.fillet = cad.modify.round
+
 -- ============================================================================
 -- 3. Combine (Booleans & Topology)
 -- ============================================================================
@@ -443,6 +452,8 @@ cad.scale = cad.modify.scale
 cad.warp = cad.modify.warp
 cad.mirror = cad.modify.mirror
 cad.round = cad.modify.round
+cad.fillet = cad.modify.round
+cad.chamfer = cad.modify.chamfer
 
 cad.union = cad.combine.union
 cad.difference = cad.combine.difference

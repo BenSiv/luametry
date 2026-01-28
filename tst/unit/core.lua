@@ -153,6 +153,10 @@ function test_all_variants()
     v = cad.create.from_obj("out/temp_unit.obj")
     v = cad.create.from_stl("out/temp_unit.stl")
     v = cad.create.text("ABC")
+    v = cad.fillet(v, 0.1)
+    v = cad.chamfer(v, 0.1)
+    v = cad.modify.fillet(v, 0.1)
+    v = cad.modify.chamfer(v, 0.1)
     
     -- Cleanup
     os.remove("out/temp_unit.stl")
