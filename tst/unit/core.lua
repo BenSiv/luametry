@@ -85,6 +85,11 @@ function test_mesh_and_stl()
     
     cad.export(mesh_node, "out/temp_unit.stl")
     stl_node = cad.from_stl("out/temp_unit.stl")
+    
+    -- OBJ Import/Export
+    cad.export(mesh_node, "out/temp_unit.obj")
+    obj_node = cad.create.from_obj("out/temp_unit.obj")
+    obj_alias = cad.from_obj("out/temp_unit.obj")
 end
 
 function test_remaining_transforms()
@@ -143,6 +148,12 @@ function test_all_variants()
     v = cad.create.torus(1, 0.1)
     v = cad.create.extrude({{0,0},{1,0},{0,1}}, 1)
     v = cad.create.revolve({{10,0},{11,0},{10,1}})
+    v = cad.create.from_obj("out/temp_unit.obj")
+    v = cad.create.from_stl("out/temp_unit.stl")
+    
+    -- Cleanup
+    os.remove("out/temp_unit.stl")
+    os.remove("out/temp_unit.obj")
     
     -- Modifiers
     v = cad.modify.translate(v, {1,0,0})
