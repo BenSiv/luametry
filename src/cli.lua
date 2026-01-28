@@ -14,7 +14,7 @@ cli.config = {
 -- Load config file
 function cli.load_config()
     paths = {
-        os.getenv("HOME") .. "/.config/luametry.conf",
+        os.getenv("HOME") .. "/.config/luametry/settings.lua",
         ".luametry.conf"
     }
     for _, path in ipairs(paths) do
@@ -142,7 +142,7 @@ end
 
 function cli.safe_dofile(path)
     ok, res = xpcall(function() return dofile(path) end, cli.error_handler)
-    if ok == false then
+    if not ok then
         print("\n" .. string.rep("-", 40))
         print("LUAMETRY SCRIPT ERROR")
         print(string.rep("-", 40))
