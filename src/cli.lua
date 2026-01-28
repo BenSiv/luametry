@@ -118,22 +118,25 @@ Updates Luametry by pulling latest from git and rebuilding.
 Does not automatically install to system path.
 
 Examples:
-luametry update
+luametry preview tst/examples/hex_bolt.lua
+luametry preview tst/examples/hex_bolt.lua --width 100 --height 50
     """,
-    ["luametry preview"] = """
+    ["luametry screenshot"] = """
 Description:
-Generates an ASCII art preview of a CAD script in the terminal.
+Generates a PNG screenshot of a CAD script using f3d.
 
 Required:
 <file>  Path to the Lua CAD script.
 
 Optional:
---width <n>   Preview width (default: 80)
---height <n>  Preview height (default: 40)
+-o --output <file>  Output PNG path (default: out/<script>.png)
+--width <n>         Image width (default: 1200)
+--height <n>        Image height (default: 800)
+--show              Open the image after rendering
 
 Examples:
-luametry preview tst/examples/hex_bolt.lua
-luametry preview tst/examples/hex_bolt.lua --width 100 --height 50
+luametry screenshot tst/examples/hex_bolt.lua
+luametry screenshot tst/examples/hex_bolt.lua -o bolt.png --show
     """
 }
 
@@ -617,6 +620,90 @@ function cli.do_preview(cmd_args)
     end
 end
 
+-- Screenshot command
+function cli.do_screenshot(cmd_args)
+    -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry screenshot"))
+            return "success"
+        end
+    end
+    
+    script = nil
+    output_path = nil
+    width = 1200
+    height = 800
+    show = false
+    
+    i = 1
+    while i <= #cmd_args do
+        a = cmd_args[i]
+        if a == "-o" or a == "--output" then
+            output_path = cmd_args[i + 1]
+            i = i + 2
+        elseif a == "--width" then
+            width = tonumber(cmd_args[i + 1])
+            i = i + 2
+        elseif a == "--height" then
+            height = tonumber(cmd_args[i + 1])
+            i = i + 2
+        elseif a == "--show" then
+            show = true
+            i = i + 1
+        else
+            if script == nil then
+                script = a
+            end
+            i = i + 1
+        end
+    end
+    
+    if script == nil then
+        print("Error: No script specified")
+        print(cli.get_help("luametry screenshot"))
+        return "error"
+    end
+    
+    if output_path == nil then
+        basename = string.match(script, "([^/]+)%.lua$") or "screenshot"
+        output_path = "out/" .. basename .. ".png"
+    end
+    
+    res = cli.safe_dofile(script)
+    if res == nil then return "error" end
+    
+    if type(res) == "table" and res.type != nil then
+        cad_mod = require("cad")
+        
+        -- We need an STL to screenshot
+        tmp_stl = "/tmp/luam_ss_" .. os.time() .. ".stl"
+        cad_mod.export(res, tmp_stl)
+        
+        print("Rendering screenshot to " .. output_path .. "...")
+        f3d_args = cli.config.viewer_args or "--up +Z"
+        cmd = string.format("f3d %s --output %s --resolution %d,%d %s > /dev/null 2>&1", 
+                           f3d_args, output_path, width, height, tmp_stl)
+        
+        ret = os.execute(cmd)
+        os.remove(tmp_stl)
+        
+        if ret == 0 or ret == true then
+            print("Success.")
+            if show then
+                os.execute("xdg-open " .. output_path .. " &")
+            end
+            return "success"
+        else
+            print("Error: f3d rendering failed. Is f3d installed?")
+            return "error"
+        end
+    else
+        print("Error: Script did not return a shape.")
+        return "error"
+    end
+end
+
 -- Main entry point
 function cli.main()
     command_funcs = {
@@ -625,7 +712,8 @@ function cli.main()
         ["export"] = cli.do_export,
         ["install"] = cli.do_install,
         ["update"] = cli.do_update,
-        ["preview"] = cli.do_preview
+        ["preview"] = cli.do_preview,
+        ["screenshot"] = cli.do_screenshot
     }
     
     command = arg[1]

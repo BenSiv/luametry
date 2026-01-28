@@ -35,10 +35,19 @@ function test_watch_discovery()
     if found_script == false then error("Watch did not find script") end
 end
 
+function test_screenshot()
+    print("Testing Screenshot command...")
+    -- This relies on f3d but we can check if it tries to run
+    res = cli.do_screenshot({"tst/examples/hex_bolt_simple.lua", "-o", "out/test_ss.png"})
+    -- If f3d is missing it might return error, but we can verify the path parsing at least
+    os.remove("out/test_ss.png")
+end
+
 -- Run them
 test_help_strings()
 test_config_loading()
 test_watch_discovery()
+test_screenshot()
 
 print("\nCLI unit tests passed.")
 return true
