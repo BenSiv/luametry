@@ -1,4 +1,5 @@
 stl = require("stl")
+step = require("step")
 script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
 csg = require("csg.manifold")
@@ -380,8 +381,13 @@ function cad.export(node, filename)
     mesh = csg.to_mesh(man)
     if mesh == nil then return false end
     
-    solid = geometry_to_stl_solid(mesh)
-    content = stl.encode_solid(solid)
+    content = nil
+    if (string.match(filename, "%.step$") != nil) or (string.match(filename, "%.stp$") != nil) then
+        content = step.encode_mesh(mesh)
+    else
+        solid = geometry_to_stl_solid(mesh)
+        content = stl.encode_solid(solid)
+    end
     
     f = io.open(filename, "w")
     if f != nil then

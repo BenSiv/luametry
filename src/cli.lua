@@ -49,6 +49,18 @@ Optional:
 Examples:
 luametry live tst/benchy.lua
 luametry live tst/benchy.lua -v meshlab
+    """,
+    ["luametry export"] = """
+Description:
+Runs a script and exports the returned shape to a file.
+
+Required:
+<file>         Path to the Lua CAD script.
+-o, --output   Path to the output file (STL or STEP).
+
+Examples:
+luametry export tst/benchy.lua -o out/result.stl
+luametry export tst/bolt.lua -o out/bolt.step
     """
 }
 
@@ -216,14 +228,78 @@ function cli.do_live(cmd_args)
     end
     
     print("Live mode stopped.")
+    print("Live mode stopped.")
     return "success"
+end
+
+-- Export command
+function cli.do_export(cmd_args)
+    -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry export"))
+            return "success"
+        end
+    end
+    
+    script = nil
+    output_path = nil
+    
+    i = 1
+    while i <= #cmd_args do
+        a = cmd_args[i]
+        if a == "-o" or a == "--output" then
+            output_path = cmd_args[i + 1]
+            i = i + 2
+        else
+            if script == nil then
+                script = a
+            end
+            i = i + 1
+        end
+    end
+    
+    if script == nil then
+        print("Error: No script specified")
+        print(cli.get_help("luametry export"))
+        return "error"
+    end
+    
+    if output_path == nil then
+        print("Error: No output file specified (-o/--output)")
+        print(cli.get_help("luametry export"))
+        return "error"
+    end
+    
+    -- Execute script and get result
+    -- We assume the script returns the shape
+    result = dofile(script)
+    
+    if result == nil then
+        print("Error: Script did not return a shape.")
+        print("Ensure your script ends with 'return my_shape'")
+        return "error"
+    end
+    
+    cad_mod = require("cad")
+    print("Exporting to " .. output_path .. "...")
+    success = cad_mod.export(result, output_path)
+    
+    if success then
+        print("Success.")
+        return "success"
+    else
+        print("Export failed.")
+        return "error"
+    end
 end
 
 -- Main entry point
 function cli.main()
     command_funcs = {
         ["run"] = cli.do_run,
-        ["live"] = cli.do_live
+        ["live"] = cli.do_live,
+        ["export"] = cli.do_export
     }
     
     command = arg[1]
