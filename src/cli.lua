@@ -20,7 +20,8 @@ function cli.get_real_home()
         os.execute("getent passwd " .. su .. " | cut -d: -f6 > " .. tmp)
         f = io.open(tmp, "r")
         if f != nil then
-            rh = f:read("*l")
+            io.input(f)
+            rh = io.read("*l")
             io.close(f)
             os.remove(tmp)
             if rh != nil and rh != "" then
