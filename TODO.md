@@ -11,7 +11,7 @@
 - [x] CLI `--output` flag to override default output path
 - [x] Refactored API (removed legacy/redundant features)
 - [x] CLI `install` command support
-- [x] Config file support (`~/.config/luametry.conf`)
+- [x] Config file support (`~/.config/luametry/settings.lua`)
 - [x] Improved error reporting with line numbers
 
 ## Future Improvements
