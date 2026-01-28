@@ -307,14 +307,14 @@ function render_node(node)
         -- This node wraps an already computed Manifold object
         return node.manifold
 
-    elseif node.type == "op" or node.type == "union" or node.type == "union_batch" or node.type == "difference" or node.type == "intersection" or node.type == "hull" or node.type == "minkowski" then
+    elseif node.type == "op" or node.type == "difference" or node.type == "intersection" or node.type == "hull" or node.type == "minkowski" then
         -- Handle both old and new style op nodes
         op = node.op or node.type
         children = node.children
         
         if #children == 0 then return csg.cube(0,0,0,0) end
         
-        if op == "union" or op == "union_batch" then
+        if op == "union" then
              rendered = {}
              for _, c in ipairs(children) do table.insert(rendered, render_node(c)) end
              return csg.union_batch(rendered)
@@ -419,14 +419,9 @@ cad.mirror = cad.modify.mirror
 cad.round = cad.modify.round
 
 cad.union = cad.combine.union
-cad.union_batch = function(nodes) return cad.combine.union(nodes) end
 cad.difference = cad.combine.difference
 cad.intersection = cad.combine.intersection
 cad.hull = cad.combine.hull
 cad.minkowski = cad.combine.minkowski
--- Legacy helpers
-cad.create_legacy = make_shape
-cad.transform_legacy = make_transform
-cad.boolean_legacy = make_op
 
 return cad

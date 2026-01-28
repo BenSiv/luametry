@@ -6,6 +6,14 @@ cd "$(dirname "$0")/.."
 
 PROJECT="luametry"
 
+# Flags
+RUN_TESTS=false
+for arg in "$@"; do
+    if [ "$arg" == "--test" ]; then
+        RUN_TESTS=true
+    fi
+done
+
 # Resolve dependency paths (allow env overrides)
 if [ -z "$LUAM_DIR" ]; then
     LUAM_DIR="$HOME/Projects/luam"
@@ -84,3 +92,8 @@ rm -rf lib/
 
 echo "Build complete."
 ls -l bin/$PROJECT
+
+if [ "$RUN_TESTS" = true ]; then
+    echo "Running tests..."
+    bash bld/test.sh
+fi
