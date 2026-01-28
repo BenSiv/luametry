@@ -13,16 +13,18 @@
 - [x] CLI `install` command support
 - [x] Config file support (`~/.config/luametry/settings.lua`)
 - [x] Improved error reporting with line numbers
+- [x] **OBJ export and import** support
+- [x] **Dynamic watch mode** (detects new files in `src/`)
+- [x] **CLI unit tests** for stability
+- [x] **CLI `update` command** to pull and rebuild
 
 ## Future Improvements
-- [ ] Support additional export formats (OBJ, 3MF)
-- [ ] Improve watch mode to detect new files
-- [ ] Add unit tests for CLI parsing
-- [ ] Add `update` command to pull latest and rebuild
+- [ ] Support additional export formats (3MF)
+- [ ] Support for multiple CAD kernels (OpenCascade, etc.)
+- [ ] Improve watch mode to use native OS events (inotify/fsevents)
+- [ ] Text/font extrusion support
 
 ## Potential Features
-- [ ] Import OBJ files for boolean operations
-- [ ] Text/font extrusion support
 - [ ] Parametric preview in terminal (ASCII art)
 - [ ] Web-based viewer integration
-- [ ] Support for multiple CAD kernels (OpenCascade, etc.)
+- [ ] Support for texture coordinates in OBJ export

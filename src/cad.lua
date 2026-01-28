@@ -1,5 +1,6 @@
 stl = require("stl")
 step = require("step")
+obj = require("obj")
 script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
 csg = require("csg.manifold")
@@ -91,6 +92,17 @@ function cad.create.from_stl(filename)
     end
     
     return cad.create.from_mesh(verts, faces)
+end
+
+function cad.create.from_obj(filename)
+    f = io.open(filename, "r")
+    if f == nil then error("Could not open file: " .. filename) end
+    io.input(f)
+    content = io.read("*a")
+    io.close(f)
+    
+    mesh = obj.decode(content)
+    return cad.create.from_mesh(mesh.verts, mesh.faces)
 end
 
 function cad.create.extrude(points, height, params)
@@ -410,6 +422,7 @@ cad.extrude = cad.create.extrude
 cad.revolve = cad.create.revolve
 cad.from_mesh = cad.create.from_mesh
 cad.from_stl = cad.create.from_stl
+cad.from_obj = cad.create.from_obj
 
 cad.translate = cad.modify.translate
 cad.rotate = cad.modify.rotate

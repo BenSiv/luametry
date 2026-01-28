@@ -111,6 +111,14 @@ Requires sudo/administrative privileges.
 
 Examples:
 sudo luametry install
+    """,
+    ["luametry update"] = """
+Description:
+Updates Luametry by pulling latest from git and rebuilding.
+Does not automatically install to system path.
+
+Examples:
+luametry update
     """
 }
 
@@ -501,13 +509,40 @@ function cli.do_install(cmd_args)
     end
 end
 
+-- Update command
+function cli.do_update(cmd_args)
+    print("Updating Luametry...")
+    
+    -- Check for git
+    if lfs.attributes(".git") == nil then
+        print("Error: Not a git repository. Update command only works inside the source repo.")
+        return "error"
+    end
+    
+    print("Pulling latest changes...")
+    os.execute("git pull")
+    
+    print("Rebuilding...")
+    ret = os.execute("bash bld/build.sh")
+    
+    if ret == 0 or ret == true then
+        print("\nUpdate complete. New binary at bin/luametry")
+        print("Run 'sudo luametry install' to update your system-wide installation.")
+        return "success"
+    else
+        print("\nBuild failed during update.")
+        return "error"
+    end
+end
+
 -- Main entry point
 function cli.main()
     command_funcs = {
         ["run"] = cli.do_run,
         ["live"] = cli.do_live,
         ["export"] = cli.do_export,
-        ["install"] = cli.do_install
+        ["install"] = cli.do_install,
+        ["update"] = cli.do_update
     }
     
     command = arg[1]
