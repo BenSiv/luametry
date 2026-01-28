@@ -349,9 +349,7 @@ function cli.do_install(cmd_args)
     end
 
     print("Installing Luametry to /usr/local/bin/luametry...")
-    -- Determine source path (bin/luametry relative to this script maybe?)
-    -- But since we are likely running FROM the binary, we can try to find where we are.
-    -- Easiest is to assume we are in the project root if running 'luametry install'
+    -- Ensure you are in the project root
     source = "bin/luametry"
     if lfs.attributes(source) == nil then
         print("Error: Could not find binary at " .. source)
@@ -359,6 +357,34 @@ function cli.do_install(cmd_args)
         return "error"
     end
 
+    -- 1. Setup global config
+    home = os.getenv("HOME")
+    if home != nil then
+        config_dir = home .. "/.config/luametry"
+        settings_file = config_dir .. "/settings.lua"
+        
+        -- Create directory
+        os.execute("mkdir -p " .. config_dir)
+        
+        -- Create default settings if missing
+        if lfs.attributes(settings_file) == nil then
+            print("Initializing config: " .. settings_file)
+            f = io.open(settings_file, "w")
+            if f != nil then
+                f:write("return {\n")
+                f:write("    -- Default 3D viewer\n")
+                f:write("    viewer = \"f3d\",\n")
+                f:write("    -- Arguments passed to viewer in live mode\n")
+                f:write("    viewer_args = \"--up +Z --resolution 1200,800\"\n")
+                f:write("}\n")
+                io.close(f)
+            end
+        else
+            print("Config already exists: " .. settings_file)
+        end
+    end
+
+    -- 2. Install binary
     cmd = "cp " .. source .. " /usr/local/bin/luametry"
     print("Running: " .. cmd)
     ret = os.execute(cmd)
