@@ -174,6 +174,7 @@ function cad.modify.chamfer(node, size)
 end
 
 cad.modify.fillet = cad.modify.round
+cad.modify.bevel = cad.modify.chamfer
 
 -- ============================================================================
 -- 3. Combine (Booleans & Topology)
@@ -454,6 +455,7 @@ cad.mirror = cad.modify.mirror
 cad.round = cad.modify.round
 cad.fillet = cad.modify.round
 cad.chamfer = cad.modify.chamfer
+cad.bevel = cad.modify.chamfer
 
 cad.union = cad.combine.union
 cad.difference = cad.combine.difference
