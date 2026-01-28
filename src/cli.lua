@@ -118,40 +118,103 @@ function cli.get_help(command)
     return cli.help_strings[command] or cli.help_strings["luametry"]
 end
 
--- Watch files and call callback on change
-function cli.watch_loop(script, on_change)
-    files = {
-        "src/cad.lua",
-        "src/shapes.lua",
-        "src/stl.lua",
-        script
-    }
-    
-    function get_mtimes(paths)
-        mtimes = {}
-        for _, path in ipairs(paths) do
+-- Helper to recursively find all .lua files in a directory
+function cli.scan_dir(dir, results)
+    for entry in lfs.dir(dir) do
+        if entry != "." and entry != ".." then
+            path = dir .. "/" .. entry
             attr = lfs.attributes(path)
-            if attr != nil then
-                mtimes[path] = attr.modification
+            if attr.mode == "directory" then
+                cli.scan_dir(path, results)
+            elseif string.match(entry, "%.lua$") != nil then
+                table.insert(results, path)
             end
         end
-        return mtimes
+    end
+end
+
+-- Helper to collect all files that should trigger a rebuild
+function cli.get_watch_files(script)
+    files = {}
+    -- 1. Core source files
+    if lfs.attributes("src") != nil then
+        cli.scan_dir("src", files)
     end
     
-    print("Watching " .. #files .. " files...")
-    last_mtimes = get_mtimes(files)
+    -- 2. Script directory
+    if script != nil then
+        script_dir = string.match(script, "(.*)/") or "."
+        if script_dir != "src" then -- Avoid double scan
+            for entry in lfs.dir(script_dir) do
+                if string.match(entry, "%.lua$") != nil then
+                    table.insert(files, script_dir .. "/" .. entry)
+                end
+            end
+        end
+    end
+    
+    -- 3. Config
+    conf = cli.get_real_home() .. "/.config/luametry/settings.lua"
+    if lfs.attributes(conf) != nil then
+        table.insert(files, conf)
+    end
+    
+    return files
+end
+
+function cli.get_mtimes(paths)
+    mtimes = {}
+    for _, path in ipairs(paths) do
+        attr = lfs.attributes(path)
+        if attr != nil then
+            mtimes[path] = attr.modification
+        end
+    end
+    return mtimes
+end
+
+-- Watch files and call callback on change
+function cli.watch_loop(script, on_change)
+    print("Watching for changes...")
+    
+    last_files = cli.get_watch_files(script)
+    last_mtimes = cli.get_mtimes(last_files)
     
     while true do
         os.execute("sleep 1")
-        current_mtimes = get_mtimes(files)
         
+        current_files = cli.get_watch_files(script)
+        current_mtimes = cli.get_mtimes(current_files)
+        
+        changed = false
+        
+        -- Check for changes in mtimes or new/deleted files
         for path, mtime in pairs(current_mtimes) do
             if last_mtimes[path] != mtime then
-                print("Changed: " .. path)
-                on_change()
-                last_mtimes = current_mtimes
+                if last_mtimes[path] != nil then
+                    print("Changed: " .. path)
+                else
+                    print("New file detected: " .. path)
+                end
+                changed = true
                 break
             end
+        end
+        
+        -- Check for deleted files
+        if changed == false then
+            for path, _ in pairs(last_mtimes) do
+                if current_mtimes[path] == nil then
+                    print("File removed: " .. path)
+                    changed = true
+                    break
+                end
+            end
+        end
+
+        if changed then
+            on_change()
+            last_mtimes = current_mtimes
         end
     end
 end
@@ -275,20 +338,39 @@ function cli.do_live(cmd_args)
         return ret == 0 or ret == true
     end
     
-    print("Watching " .. #files .. " files... (Ctrl+C or close viewer to stop)")
-    last_mtimes = get_mtimes(files)
+    print("Watching for changes... (Ctrl+C or close viewer to stop)")
+    last_files = cli.get_watch_files(script)
+    last_mtimes = cli.get_mtimes(last_files)
     
     while viewer_running() do
         os.execute("sleep 1")
-        current_mtimes = get_mtimes(files)
         
+        current_files = cli.get_watch_files(script)
+        current_mtimes = cli.get_mtimes(current_files)
+        
+        changed = false
         for path, mtime in pairs(current_mtimes) do
             if last_mtimes[path] != mtime then
                 print("Changed: " .. path .. " - Rebuilding...")
                 cli.safe_dofile(script)
-                last_mtimes = current_mtimes
+                changed = true
                 break
             end
+        end
+        
+        if changed == false then
+             for path, _ in pairs(last_mtimes) do
+                if current_mtimes[path] == nil then
+                    print("File removed - Rebuilding...")
+                    cli.safe_dofile(script)
+                    changed = true
+                    break
+                end
+            end
+        end
+
+        if changed then
+            last_mtimes = current_mtimes
         end
     end
     
