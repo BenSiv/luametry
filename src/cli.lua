@@ -305,7 +305,7 @@ function cli.do_run(cmd_args)
             output_path = "out/" .. basename .. ".stl"
         end
         cad_mod = require("cad")
-        print("Exporting to " .. output_path .. "...")
+        print("Exporting to " .. output_path)
         if cad_mod.export(res, output_path) == false then
             return "error"
         end
@@ -471,7 +471,7 @@ function cli.do_export(cmd_args)
     end
     
     cad_mod = require("cad")
-    print("Exporting to " .. output_path .. "...")
+    print("Exporting to " .. output_path)
     success = cad_mod.export(result, output_path)
     
     if success then
@@ -553,10 +553,10 @@ function cli.do_update(cmd_args)
         return "error"
     end
     
-    print("Pulling latest changes...")
+    print("Pulling latest changes")
     os.execute("git pull")
     
-    print("Rebuilding...")
+    print("Rebuilding")
     ret = os.execute("bash bld/build.sh")
     
     if ret == 0 or ret == true then
@@ -629,7 +629,7 @@ function cli.do_screenshot(cmd_args)
         tmp_stl = "/tmp/luam_ss_" .. os.time() .. ".stl"
         cad_mod.export(res, tmp_stl)
         
-        print("Rendering screenshot to " .. output_path .. "...")
+        print("Rendering screenshot to " .. output_path)
         f3d_args = cli.config.viewer_args or "--up +Z"
         cmd = string.format("f3d %s --output %s --resolution %d,%d %s > /dev/null 2>&1", 
                            f3d_args, output_path, width, height, tmp_stl)
