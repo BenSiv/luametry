@@ -60,10 +60,12 @@ Usage: luametry <command> [options]
 
 luametry run <file>
 luametry live <file> [-v viewer]
+luametry analyze <file>
 
 defaults:
-run  -> execute script, generate STL
+run  -> execute script, generate STL + manifest
 live -> run + watch + viewer
+analyze -> show model structure and metadata
 
 luametry <command> -h for more info
     """,
@@ -85,12 +87,20 @@ and opens a 3D viewer that reloads on file changes.
 Required:
 <file>  Path to the Lua CAD script.
 
-Optional:
--v --viewer <cmd>  3D viewer command (default: f3d)
-
 Examples:
 luametry live tst/benchy.lua
 luametry live tst/benchy.lua -v meshlab
+    """,
+    ["luametry analyze"] = """
+Description:
+Analyzes a CAD script and prints the structure of the returned shape, 
+including labels and source code locations.
+
+Required:
+<file>  Path to the Lua CAD script.
+
+Examples:
+luametry analyze tst/examples/hex_bolt_simple.lua
     """,
     ["luametry export"] = """
 Description:
@@ -309,9 +319,111 @@ function cli.do_run(cmd_args)
         if cad_mod.export(res, output_path) == false then
             return "error"
         end
+        
+        -- Automatic Manifest Export
+        manifest_path = output_path .. ".manifest.json"
+        print("Exporting manifest to " .. manifest_path)
+        cad_mod.export_manifest(res, manifest_path)
+        
         print("Success.")
     end
     
+    return "success"
+end
+
+-- Analyze model structure
+function cli.do_analyze(cmd_args)
+     -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry analyze"))
+            return "success"
+        end
+    end
+    
+    script = cmd_args[1]
+    if script == nil then
+        print("Error: No script specified")
+        return "error"
+    end
+    
+    res = cli.safe_dofile(script)
+    if res == nil then return "error" end
+    
+    if type(res) != "table" or res.type == nil then
+        print("Error: Script did not return a valid shape.")
+        return "error"
+    end
+    
+    print("\nLUAMETRY MODEL ANALYSIS")
+    print(string.rep("=", 40))
+    
+    function format_params(p)
+        if p == nil then return "" end
+        if type(p) != "table" then return " (" .. tostring(p) .. ")" end
+        
+        parts = {}
+        for k, v in pairs(p) do
+            if type(v) != "function" then
+                v_str = ""
+                if type(v) == "table" then
+                    i_parts = {}
+                    for ik, iv in pairs(v) do
+                        if #i_parts > 10 then break end
+                        if type(ik) == "number" then
+                            table.insert(i_parts, tostring(iv))
+                        else
+                            table.insert(i_parts, ik .. "=" .. tostring(iv))
+                        end
+                    end
+                    v_str = "{" .. table.concat(i_parts, ", ") .. "}"
+                else
+                    v_str = tostring(v)
+                end
+                
+                if type(k) == "number" then
+                    table.insert(parts, v_str)
+                else
+                    table.insert(parts, k .. "=" .. v_str)
+                end
+            end
+        end
+        if #parts == 0 then return "" end
+        return " (" .. table.concat(parts, ", ") .. ")"
+    end
+    
+    function dump_node(node, indent)
+        prefix = string.rep("  ", indent)
+        label = (node.label != nil) and (" [" .. node.label .. "]") or ""
+        source = (node.source_info != nil) and (" (" .. string.match(node.source_info.source, "([^/]+)$") .. ":" .. node.source_info.line .. ")") or ""
+        
+        info = ""
+        if node.type == "shape" then
+            info = node.shape
+        elseif node.type == "transform" then
+            info = node.transform
+        elseif node.type == "op" then
+            info = node.op
+        else
+            info = node.type
+        end
+        
+        params = format_params(node.params)
+        
+        print(prefix .. "- " .. info .. label .. params .. source)
+        
+        if node.child != nil then
+            dump_node(node.child, indent + 1)
+        end
+        if node.children != nil then
+            for _, child in ipairs(node.children) do
+                dump_node(child, indent + 1)
+            end
+        end
+    end
+    
+    dump_node(res, 0)
+    print(string.rep("=", 40) .. "\n")
     return "success"
 end
 
@@ -475,6 +587,11 @@ function cli.do_export(cmd_args)
     success = cad_mod.export(result, output_path)
     
     if success then
+        -- Automatic Manifest Export
+        manifest_path = output_path .. ".manifest.json"
+        print("Exporting manifest to " .. manifest_path)
+        cad_mod.export_manifest(result, manifest_path)
+        
         print("Success.")
         return "success"
     else
@@ -661,7 +778,8 @@ function cli.main()
         ["export"] = cli.do_export,
         ["install"] = cli.do_install,
         ["update"] = cli.do_update,
-        ["screenshot"] = cli.do_screenshot
+        ["screenshot"] = cli.do_screenshot,
+        ["analyze"] = cli.do_analyze
     }
     
     command = arg[1]

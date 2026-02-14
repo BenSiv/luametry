@@ -108,7 +108,7 @@ const p = {
     -- make_cabin built at Base.
     -- So let's align Cargo Box to Base Z=0 too.
     -- Then Z location = deck_z (8).
-    cargo_x = -8,
+    cargo_x = -13.5,
     
     -- Hawsepipe
     hawse_diameter = 4,

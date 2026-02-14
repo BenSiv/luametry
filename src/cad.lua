@@ -8,27 +8,104 @@ package.cpath = package.cpath .. ";" .. script_path .. "?.so"
 csg = require("csg.manifold")
 
 cad = {}
+cad.file_cache = {}
+
+function get_source_line(source, line_num)
+    if source == nil or line_num == nil or line_num < 1 then return nil end
+    
+    -- Strip '@' prefix if present
+    if string.sub(source, 1, 1) == "@" then
+        source = string.sub(source, 2)
+    end
+    
+    if cad.file_cache[source] == nil then
+        f = io.open(source, "r")
+        if f == nil then 
+            return nil 
+        end
+        lines = {}
+        for line in io.lines(source) do
+            table.insert(lines, line)
+        end
+        io.close(f)
+        cad.file_cache[source] = lines
+    end
+    
+    return cad.file_cache[source][line_num]
+end
+
+function infer_name(line)
+    if line == nil then return nil end
+    -- Look for assignment: var = ...
+    -- Pattern: optional spaces, word, optional spaces, =, optional spaces
+    name = string.match(line, "^%s*([%w_]+)%s*=")
+    return name
+end
 
 -- Internal Scene Graph Node Builders
 
+function get_source_info()
+    -- Look up the stack to find the first frame outside of cad.lua
+    for i = 2, 10 do
+        info = debug.getinfo(i, "Sl")
+        if info != nil then
+            source = info.source
+            if string.find(source, "cad") == nil and info.what != "C" and string.find(source, "tail call") == nil then
+                s_info = {
+                    source = source,
+                    line = info.currentline
+                }
+                
+                -- Try to infer name
+                line_text = get_source_line(source, info.currentline)
+                s_info.name = infer_name(line_text)
+                
+                return s_info
+            end
+        else
+            break
+        end
+    end
+    return nil
+end
+
+function set_meta(node)
+    s_info = get_source_info()
+    node.source_info = s_info
+    if node.label == nil and s_info != nil and s_info.name != nil then
+        node.label = s_info.name
+    end
+    return node
+end
+
 function make_shape(type, params)
-    return { type = "shape", shape = type, params = params or {} }
+    node = { type = "shape", shape = type, params = params or {} }
+    set_meta(node)
+    return node
 end
 
 function make_transform(type, node, params)
-    return { type = "transform", transform = type, params = params or {}, child = node }
+    t_node = { type = "transform", transform = type, params = params or {}, child = node }
+    set_meta(t_node)
+    return t_node
 end
 
 function make_op(type, nodes)
-    return { type = "op", op = type, children = nodes }
+    op_node = { type = "op", op = type, children = nodes }
+    set_meta(op_node)
+    return op_node
 end
 
 function make_trim(node, nx, ny, nz, offset)
-    return { type = "trim", child = node, nx=nx, ny=ny, nz=nz, offset=offset }
+    trim_node = { type = "trim", child = node, nx=nx, ny=ny, nz=nz, offset=offset }
+    set_meta(trim_node)
+    return trim_node
 end
 
 function make_manifold_node(m)
-    return { type = "manifold", manifold = m }
+    m_node = { type = "manifold", manifold = m }
+    set_meta(m_node)
+    return m_node
 end
 
 -- ============================================================================
@@ -63,7 +140,7 @@ function cad.create.torus(major, minor, major_segs, minor_segs)
 end
 
 function cad.create.from_mesh(verts, faces)
-    return { type = "from_mesh", verts = verts, faces = faces }
+    return set_meta({ type = "from_mesh", verts = verts, faces = faces })
 end
 
 function cad.create.from_stl(filename)
@@ -109,25 +186,25 @@ end
 
 function cad.create.extrude(points, height, params)
     if type(points) == "table" and points.points != nil then
-         return { type = "extrude", points = points.points, height = points.height, params = points or {} }
+         return set_meta({ type = "extrude", points = points.points, height = points.height, params = points or {} })
     end
-    return {
+    return set_meta({
         type = "extrude",
         points = points,
         height = height,
         params = params or {}
-    }
+    })
 end
 
 function cad.create.revolve(points, params)
     if type(points) == "table" and points.points != nil then
-         return { type = "revolve", points = points.points, params = points or {} }
+         return set_meta({ type = "revolve", points = points.points, params = points or {} })
     end
-    return {
+    return set_meta({
         type = "revolve",
         points = points,
         params = params or {}
-    }
+    })
 end
 
 function cad.create.text(text_str, params)
@@ -157,7 +234,7 @@ end
 
 
 function cad.modify.warp(node, func)
-    return { type = "warp", child = node, warp_func = func }
+    return set_meta({ type = "warp", child = node, warp_func = func })
 end
 
 function cad.modify.fillet(node, r, fn)
@@ -434,6 +511,49 @@ function cad.export(node, filename)
 end
 
 -- ============================================================================
+-- 5. Semantic Manifest Export
+-- ============================================================================
+
+function serialize_json(obj)
+    if type(obj) == "string" then return string.format("%q", obj) end
+    if type(obj) == "number" then return tostring(obj) end
+    if type(obj) == "boolean" then return tostring(obj) end
+    if type(obj) == "table" then
+        is_array = #obj > 0
+        parts = {}
+        if is_array then
+            for _, v in ipairs(obj) do table.insert(parts, serialize_json(v)) end
+            return "[" .. table.concat(parts, ",") .. "]"
+        else
+            for k, v in pairs(obj) do
+                -- Filter out functions and large data like mesh verts
+                if type(v) != "function" and k != "verts" and k != "faces" and k != "manifold" then
+                    table.insert(parts, string.format("%q:%s", k, serialize_json(v)))
+                end
+            end
+            return "{" .. table.concat(parts, ",") .. "}"
+        end
+    end
+    return "null"
+end
+
+function cad.export_manifest(node, filename)
+    json = serialize_json(node)
+    f = io.open(filename, "w")
+    if f != nil then
+        io.write(f, json)
+        io.close(f)
+        return true
+    end
+    return false
+end
+
+function cad.set_name(node, name)
+    node.label = name
+    return node
+end
+
+-- ============================================================================
 -- Flat Aliases (Backward Compatibility)
 -- ============================================================================
 cad.cube = cad.create.cube
@@ -463,5 +583,8 @@ cad.difference = cad.combine.difference
 cad.intersection = cad.combine.intersection
 cad.hull = cad.combine.hull
 cad.minkowski = cad.combine.minkowski
+
+cad.set_name = cad.set_name
+cad.name = cad.set_name
 
 return cad
