@@ -4,7 +4,7 @@
 cad = require("cad")
 
 function test_source_attribution()
-    print("Testing Source Attribution...")
+    print("Testing Source Attribution")
     -- Line 8
     c = cad.cube(10)
     
@@ -24,14 +24,14 @@ function test_source_attribution()
 end
 
 function test_naming()
-    print("Testing Naming API...")
+    print("Testing Naming API")
     c = cad.cube(10)
     cad.name(c, "my_box")
     if c.label != "my_box" then error("cad.name failed") end
 end
 
 function test_manifest_export()
-    print("Testing Manifest Export...")
+    print("Testing Manifest Export")
     c = cad.cube(10)
     cad.name(c, "root")
     u = cad.union({c, cad.cube(5)})

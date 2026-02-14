@@ -145,6 +145,6 @@ params = {
     taper_angle = 10
 }
 
-print("Generating Screwdriver...")
+print("Generating Screwdriver")
 driver = create_screwdriver(params)
 return driver

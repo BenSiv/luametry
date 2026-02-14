@@ -5,7 +5,7 @@
 cad = require("cad")
 
 function test_revolve()
-    print("Testing Revolve...")
+    print("Testing Revolve")
     pts = {}
     r = 2
     for i = 0, 16 do
@@ -24,7 +24,7 @@ function test_revolve()
 end
 
 function test_mirror()
-    print("Testing Mirror (Alias)...")
+    print("Testing Mirror (Alias)")
     c = cad.cube({size=10, center=false})
     c = cad.translate(c, {5, 5, 5})
     m = cad.mirror(c, {0, 1, 0})
@@ -34,7 +34,7 @@ function test_mirror()
 end
 
 function test_minkowski()
-    print("Testing Minkowski (Aliases)...")
+    print("Testing Minkowski (Aliases)")
     c = cad.cube({size=1, center=true})
     s = cad.sphere({r=0.5, fn=8})
     
@@ -47,7 +47,7 @@ function test_minkowski()
 end
 
 function test_topology_aliases()
-    print("Testing Topology Aliases...")
+    print("Testing Topology Aliases")
     c1 = cad.cube(10)
     c2 = cad.translate(c1, {5, 0, 0})
     
@@ -66,7 +66,7 @@ function test_topology_aliases()
 end
 
 function test_mesh_and_stl()
-    print("Testing Mesh and STL import/export...")
+    print("Testing Mesh and STL import/export")
     verts = {
         {0,0,0}, {1,0,0}, {1,1,0}, {0,1,0},
         {0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}
@@ -95,7 +95,7 @@ function test_mesh_and_stl()
 end
 
 function test_remaining_transforms()
-    print("Testing Rotate and Scale aliases...")
+    print("Testing Rotate and Scale aliases")
     c = cad.cube(1)
     c1 = cad.rotate(c, {45, 45, 0})
     c2 = cad.scale(c, {2, 2, 2})
@@ -105,7 +105,7 @@ function test_remaining_transforms()
 end
 
 function test_render()
-    print("Testing Render and Round...")
+    print("Testing Render and Round")
     c1 = cad.cube(10)
     man = cad.render(c1)
     if man == nil then error("cad.render failed") end
@@ -114,7 +114,7 @@ function test_render()
 end
 
 function test_advanced_ops()
-    print("Testing Trim, Split, Decompose...")
+    print("Testing Trim, Split, Decompose")
     c = cad.cube(10, true)
     
     -- Trim
@@ -134,14 +134,14 @@ function test_advanced_ops()
 end
 
 function test_queries()
-    print("Testing Query Area...")
+    print("Testing Query Area")
     c = cad.cube(10)
     area = cad.query.surface_area(c)
     if math.abs(area - 600) > 0.01 then error("Surface area failed: " .. area) end
 end
 
 function test_all_variants()
-    print("Ensuring all API variants are covered...")
+    print("Ensuring all API variants are covered")
     -- Generators
     v = cad.create.cube(1)
     v = cad.create.cylinder(1, 1)
@@ -175,7 +175,7 @@ function test_all_variants()
 end
 
 function test_text()
-    print("Testing Text Extrusion...")
+    print("Testing Text Extrusion")
     t = cad.text("CAD", {h=10, t=1, z=2})
     if t == nil then error("cad.text failed") end
     vol = cad.query.volume(t)

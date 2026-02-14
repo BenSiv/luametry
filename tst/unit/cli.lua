@@ -4,7 +4,7 @@
 cli = require("cli")
 
 function test_help_strings()
-    print("Testing Help Strings...")
+    print("Testing Help Strings")
     h = cli.get_help("luametry run")
     if string.find(h, "Runs a CAD script") == nil then error("Help string for run failed") end
     
@@ -13,14 +13,14 @@ function test_help_strings()
 end
 
 function test_config_loading()
-    print("Testing Config Loading...")
+    print("Testing Config Loading")
     -- We can't easily mock HOME without side effects, but we can verify cli.config exists
     if cli.config == nil then error("Config table missing") end
     if cli.config.viewer == nil then error("Default viewer missing") end
 end
 
 function test_watch_discovery()
-    print("Testing Watch Discovery...")
+    print("Testing Watch Discovery")
     files = cli.get_watch_files("tst/examples/hex_bolt.lua")
     
     found_core = false
@@ -36,7 +36,7 @@ function test_watch_discovery()
 end
 
 function test_screenshot()
-    print("Testing Screenshot command...")
+    print("Testing Screenshot command")
     -- This relies on f3d but we can check if it tries to run
     res = cli.do_screenshot({"tst/examples/hex_bolt_simple.lua", "-o", "out/test_ss.png"})
     -- If f3d is missing it might return error, but we can verify the path parsing at least

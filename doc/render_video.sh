@@ -21,7 +21,7 @@ SCALE_DIVISOR=4
 # Padding from the bottom right corner
 PADDING=20
 
-echo "Rendering video..."
+echo "Rendering video"
 echo "Screen: $SCREEN"
 echo "Face:   $FACE (Starting at ${START_TIME}s)"
 echo "Output: $OUTPUT"

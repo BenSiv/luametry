@@ -108,6 +108,6 @@ params = {
     tool_fn = 12
 }
 
-print("Generating Hex Nut...")
+print("Generating Hex Nut")
 nut = create_hex_nut(params)
 return nut

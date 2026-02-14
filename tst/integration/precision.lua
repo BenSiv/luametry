@@ -4,7 +4,7 @@ const cad = require("cad")
 const stl = require("stl")
 
 function verify()
-    print("Generating test shapes...")
+    print("Generating test shapes")
     -- Shape A: Cube 10x10x10 at 0,0,0
     a = cad.create.cube({size=10, center=true}) -- -5 to 5
     
@@ -14,22 +14,22 @@ function verify()
     tmp_b = cad.create.cube({size=10, center=true})
     b = cad.modify.translate(tmp_b, {5, 0, 0}) -- 0 to 10
     
-    print("Exporting temporary STLs...")
+    print("Exporting temporary STLs")
     cad.export(a, "temp_a.stl")
     cad.export(b, "temp_b.stl")
     
-    print("Loading STLs back as manifolds...")
+    print("Loading STLs back as manifolds")
     ma = cad.create.from_stl("temp_a.stl")
     mb = cad.create.from_stl("temp_b.stl")
     
-    print("Calculating Volumes...")
+    print("Calculating Volumes")
     vol_a = cad.query.volume(ma)
     vol_b = cad.query.volume(mb) 
     
     print(string.format("Volume A: %.2f (Expected ~1000)", vol_a))
     print(string.format("Volume B: %.2f (Expected ~1000)", vol_b))
     
-    print("Calculating Intersection...")
+    print("Calculating Intersection")
     -- i = Intersection(ma, mb)
     i = cad.combine.intersection({ma, mb})
     vol_i = cad.query.volume(i)

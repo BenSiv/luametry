@@ -107,7 +107,7 @@ for k, v in pairs(params) do print("  " .. k .. ": " .. v) end
 
 bolt = create_bolt(params)
 
--- print("Exporting...")
+-- print("Exporting")
 -- cad.export(bolt, "out/hex_bolt.stl")
 -- print("Done: out/hex_bolt.stl")
 

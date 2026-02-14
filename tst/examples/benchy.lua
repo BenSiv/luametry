@@ -2,7 +2,7 @@ package.path = package.path .. ";./src/?.lua"
 cad = require("cad")
 const shapes = require("shapes")
 
-print("Modeling Parametric 3DBenchy (Refactored)...")
+print("Modeling Parametric 3DBenchy (Refactored)")
 
 -- ============================================================================
 -- 1. UTILITIES

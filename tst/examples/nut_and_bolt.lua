@@ -28,7 +28,7 @@ create_bolt = dofile("tst/examples/hex_bolt.lua")
 create_nut = dofile("tst/examples/hex_nut.lua")
 package.loaded.import_mode = nil
 
-print("Generating Bolt...")
+print("Generating Bolt")
 bolt = create_bolt({
     head_dia = params.bolt_head_dia,
     head_height = params.bolt_head_height,
@@ -42,7 +42,7 @@ bolt = create_bolt({
     tool_fn = params.tool_fn
 })
 
-print("Generating Nut...")
+print("Generating Nut")
 nut = create_nut({
     shaft_dia = params.shaft_dia,
     pitch = params.pitch,

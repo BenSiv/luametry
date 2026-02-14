@@ -24,7 +24,7 @@ function get_file_mtimes(paths)
     return mtimes
 end
 
-print("Watching " .. #watch_files .. " files...")
+print("Watching " .. #watch_files .. " files")
 print("Command: " .. build_command)
 
 last_mtimes = get_file_mtimes(watch_files)

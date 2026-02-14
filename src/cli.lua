@@ -210,7 +210,7 @@ end
 
 -- Watch files and call callback on change
 function cli.watch_loop(script, on_change)
-    print("Watching for changes...")
+    print("Watching for changes")
     
     last_files = cli.get_watch_files(script)
     last_mtimes = cli.get_mtimes(last_files)
@@ -492,7 +492,7 @@ function cli.do_live(cmd_args)
         return ret == 0 or ret == true
     end
     
-    print("Watching for changes... (Ctrl+C or close viewer to stop)")
+    print("Watching for changes (Ctrl+C or close viewer to stop)")
     last_files = cli.get_watch_files(script)
     last_mtimes = cli.get_mtimes(last_files)
     
@@ -505,7 +505,7 @@ function cli.do_live(cmd_args)
         changed = false
         for path, mtime in pairs(current_mtimes) do
             if last_mtimes[path] != mtime then
-                print("Changed: " .. path .. " - Rebuilding...")
+                print("Changed: " .. path .. " - Rebuilding")
                 build_and_export()
                 changed = true
                 break
@@ -515,7 +515,7 @@ function cli.do_live(cmd_args)
         if changed == false then
              for path, _ in pairs(last_mtimes) do
                 if current_mtimes[path] == nil then
-                    print("File removed - Rebuilding...")
+                    print("File removed - Rebuilding")
                     build_and_export()
                     changed = true
                     break
@@ -610,7 +610,7 @@ function cli.do_install(cmd_args)
         end
     end
 
-    print("Installing Luametry to /usr/local/bin/luametry...")
+    print("Installing Luametry to /usr/local/bin/luametry")
     -- Ensure you are in the project root
     source = "bin/luametry"
     if lfs.attributes(source) == nil then
@@ -662,7 +662,7 @@ end
 
 -- Update command
 function cli.do_update(cmd_args)
-    print("Updating Luametry...")
+    print("Updating Luametry")
     
     -- Check for git
     if lfs.attributes(".git") == nil then

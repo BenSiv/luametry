@@ -97,6 +97,6 @@ echo "Build complete."
 ls -l bin/$PROJECT
 
 if [ "$RUN_TESTS" = true ]; then
-    echo "Running tests..."
+    echo "Running tests"
     bash bld/test.sh
 fi
