@@ -65,6 +65,7 @@ label = cad.text("LUAMETRY", {
     rounded = true -- Smooth joints
 })
 ```
+* See full example at tst/examples/text.lua
 
 ### 4. Boolean Operations
 - `cad.union({shapes})`
