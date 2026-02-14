@@ -61,11 +61,13 @@ Usage: luametry <command> [options]
 luametry run <file>
 luametry live <file> [-v viewer]
 luametry analyze <file>
+luametry reverse <file>
 
 defaults:
 run  -> execute script, generate STL + manifest
 live -> run + watch + viewer
 analyze -> show model structure and metadata
+reverse -> attempt to reconstruct CAD script from STL/OBJ
 
 luametry <command> -h for more info
     """,
@@ -101,6 +103,17 @@ Required:
 
 Examples:
 luametry analyze tst/examples/hex_bolt_simple.lua
+    """,
+    ["luametry reverse"] = """
+Description:
+Attempts to reconstruct a parametric Luametry script from a static mesh file (STL/OBJ).
+It uses geometric analysis to fit primitive shapes.
+
+Required:
+<file>  Path to the STL or OBJ file.
+
+Examples:
+luametry reverse out/benchy.stl
     """,
     ["luametry export"] = """
 Description:
@@ -424,6 +437,47 @@ function cli.do_analyze(cmd_args)
     
     dump_node(res, 0)
     print(string.rep("=", 40) .. "\n")
+    return "success"
+end
+
+function cli.do_reverse(cmd_args)
+    if cmd_args[1] == "-h" or cmd_args[1] == "--help" or #cmd_args == 0 then
+        print(cli.get_help("luametry reverse"))
+        return "success"
+    end
+    
+    filename = cmd_args[1]
+    if lfs.attributes(filename) == nil then
+        print("Error: File not found: " .. filename)
+        return "error"
+    end
+    
+    cad = require("cad")
+    
+    -- Load based on extension
+    node = nil
+    if string.match(filename, "%.stl$") != nil then
+        node = cad.from_stl(filename)
+    elseif string.match(filename, "%.obj$") != nil then
+        node = cad.from_obj(filename)
+    else
+        print("Error: Unsupported file format for reverse: " .. filename)
+        return "error"
+    end
+    
+    print("Analyzing geometry for primitives")
+    analysis = cad.re.analyze(node, cad)
+    
+    print("\nREVERSE CAD RESULT")
+    print(string.rep("=", 40))
+    code = cad.re.to_code(analysis)
+    print(code)
+    print(string.rep("=", 40) .. "\n")
+    
+    -- Suggest output file
+    target = string.gsub(filename, "%..*$", "") .. "_re.lua"
+    print("Suggested recovery script: " .. target)
+    
     return "success"
 end
 
@@ -779,7 +833,8 @@ function cli.main()
         ["install"] = cli.do_install,
         ["update"] = cli.do_update,
         ["screenshot"] = cli.do_screenshot,
-        ["analyze"] = cli.do_analyze
+        ["analyze"] = cli.do_analyze,
+        ["reverse"] = cli.do_reverse
     }
     
     command = arg[1]

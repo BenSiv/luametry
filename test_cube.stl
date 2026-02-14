@@ -1,0 +1,86 @@
+solid csg_export
+	facet normal 0 -1 0
+		outer loop
+			vertex 5 5 35
+			vertex 5 5 5
+			vertex 15 5 5
+		endloop
+	endfacet
+	facet normal 0 0 -1
+		outer loop
+			vertex 5 25 5
+			vertex 15 5 5
+			vertex 5 5 5
+		endloop
+	endfacet
+	facet normal -1 0 0
+		outer loop
+			vertex 5 5 35
+			vertex 5 25 35
+			vertex 5 5 5
+		endloop
+	endfacet
+	facet normal 0 0 1
+		outer loop
+			vertex 5 25 35
+			vertex 5 5 35
+			vertex 15 5 35
+		endloop
+	endfacet
+	facet normal -1 0 -0
+		outer loop
+			vertex 5 25 35
+			vertex 5 25 5
+			vertex 5 5 5
+		endloop
+	endfacet
+	facet normal -0 1 0
+		outer loop
+			vertex 5 25 35
+			vertex 15 25 35
+			vertex 5 25 5
+		endloop
+	endfacet
+	facet normal 1 0 0
+		outer loop
+			vertex 15 5 35
+			vertex 15 5 5
+			vertex 15 25 5
+		endloop
+	endfacet
+	facet normal -0 -1 -0
+		outer loop
+			vertex 15 5 35
+			vertex 5 5 35
+			vertex 15 5 5
+		endloop
+	endfacet
+	facet normal -0 -0 -1
+		outer loop
+			vertex 15 25 5
+			vertex 15 5 5
+			vertex 5 25 5
+		endloop
+	endfacet
+	facet normal 0 1 0
+		outer loop
+			vertex 15 25 35
+			vertex 15 25 5
+			vertex 5 25 5
+		endloop
+	endfacet
+	facet normal 0 0 1
+		outer loop
+			vertex 15 25 35
+			vertex 5 25 35
+			vertex 15 5 35
+		endloop
+	endfacet
+	facet normal 1 0 0
+		outer loop
+			vertex 15 25 35
+			vertex 15 5 35
+			vertex 15 25 5
+		endloop
+	endfacet
+endsolid
