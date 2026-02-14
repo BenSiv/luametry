@@ -1,0 +1,12 @@
+Analyzing geometry for primitives
+
+REVERSE CAD RESULT
+========================================
+parts = {}
+table.insert(parts, cad.translate(cad.cylinder({r=3.000, h=89.325, center=true}), {0.000, 0.000, 101.337}))
+table.insert(parts, -- Complex mesh (100 verts, 196 faces))
+table.insert(parts, -- Complex mesh (425 verts, 846 faces))
+return cad.union(parts)
+========================================
+
+Suggested recovery script: screwdriver_re.lua
