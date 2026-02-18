@@ -236,15 +236,6 @@ static int l_extrude(lua_State *L) {
   push_manifold(L, m);
   return 1;
 }
-
-// Hull of a single manifold
-static int l_hull(lua_State *L) {
-  ManifoldManifold *m = check_manifold(L, 1);
-  ManifoldManifold *res = manifold_hull(alloc_manifold(), m);
-  push_manifold(L, res);
-  return 1;
-}
-
 static int l_batch_hull(lua_State *L) {
   if (!lua_istable(L, 1)) {
     luaL_error(L, "Expected table of manifolds");
@@ -637,25 +628,20 @@ static int l_surface_area(lua_State *L) {
   return 1;
 }
 
-// Slice at height (returns area of cross section)
+// Slice Area at Z
 static int l_slice(lua_State *L) {
   ManifoldManifold *m = check_manifold(L, 1);
-  double height = luaL_checknumber(L, 2);
+  double z = luaL_checknumber(L, 2);
 
-  ManifoldPolygons *polys =
-      manifold_slice(manifold_alloc_polygons(), m, height);
-  if (!polys) {
-    lua_pushnumber(L, 0);
-    return 1;
-  }
+  ManifoldPolygons *polys = manifold_slice(manifold_alloc_polygons(), m, z);
 
   ManifoldCrossSection *cs = manifold_cross_section_of_polygons(
       manifold_alloc_cross_section(), polys, MANIFOLD_FILL_RULE_EVEN_ODD);
 
   double area = manifold_cross_section_area(cs);
 
-  manifold_delete_polygons(polys);
   manifold_delete_cross_section(cs);
+  manifold_delete_polygons(polys);
 
   lua_pushnumber(L, area);
   return 1;
@@ -682,8 +668,7 @@ static const struct luaL_Reg csg_lib[] = {{"cube", l_cube},
                                           {"difference", l_difference},
                                           {"intersection", l_intersection},
                                           {"minkowski", l_minkowski},
-                                          {"hull", l_hull},
-                                          {"hull_batch", l_batch_hull},
+                                          {"hull", l_batch_hull},
                                           {"union_batch", l_batch_union},
                                           {"extrude", l_extrude},
                                           {"revolve", l_revolve},
@@ -694,12 +679,12 @@ static const struct luaL_Reg csg_lib[] = {{"cube", l_cube},
                                           {"mirror", l_mirror},
                                           {"trim_by_plane", l_trim_by_plane},
                                           {"split_by_plane", l_split_by_plane},
-                                          {"slice", l_slice},
                                           {"decompose", l_decompose},
                                           {"volume", l_volume},
                                           {"surface_area", l_surface_area},
                                           {"to_mesh", l_to_mesh},
                                           {"from_mesh", l_from_mesh},
+                                          {"slice", l_slice},
                                           {NULL, NULL}};
 
 extern "C" int luaopen_csg_manifold(lua_State *L) {

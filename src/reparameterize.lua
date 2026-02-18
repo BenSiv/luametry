@@ -23,7 +23,8 @@ function re.analyze_primitive(man_p, depth_p, tolerance_p, mesh_d_p, vol_p, bbox
     depth_p = depth_p or 0 tolerance_p = tolerance_p or 0.1
     if depth_p > 10 then 
         mesh_d_p = csg.to_mesh(man_p)
-        return { type = "mesh", verts = #mesh_d_p.verts, faces = #mesh_d_p.faces, manifold = man_p } 
+        bbox_p = re.get_bounding_box(mesh_d_p)
+        return { type = "mesh", verts = #mesh_d_p.verts, faces = #mesh_d_p.faces, manifold = man_p, bbox = bbox_p, vol = csg.volume(man_p), density = 1 } 
     end
     mesh_d_p = csg.to_mesh(man_p)
     if mesh_d_p == nil or #mesh_d_p.verts == 0 then return nil end
@@ -226,14 +227,22 @@ function re.analyze_recursive(man_rec, d_rec, m_d_rec, tol_rec, parts_rec, res_l
     if a_s_rec.type != "mesh" then return a_s_rec end
     
     -- Try Subtraction BEFORE splitting
-    h_m_rec = csg.hull(man_rec)
+    h_m_rec = csg.hull({man_rec})
     h_a_rec = re.analyze_primitive(h_m_rec, d_rec + 1, tol_rec)
     if h_a_rec != nil and h_a_rec.type != "mesh" then
         rm_o_rec = csg.difference(h_m_rec, man_rec)
         rm_v_rec = csg.volume(rm_o_rec)
-        if rm_v_rec > 0.01 * csg.volume(h_m_rec) then
+        if (rm_v_rec or 0) > 0.01 * (csg.volume(h_m_rec) or 1) then
             rm_a_rec = re.analyze_recursive(rm_o_rec, d_rec + 1, m_d_rec, tol_rec)
-            if rm_a_rec != nil then return { type = "difference", base = h_a_rec, subtract = rm_a_rec } end
+            -- Only accept Difference if it simplifies the problem (remnant is primitive)
+            -- OR if it's a true "Carving" (Remnant is smaller than Original)
+            if rm_a_rec != nil then
+                is_carving_rec = (rm_v_rec or 0) < (csg.volume(man_rec) or 0) * 0.9
+                is_simple_rec = (rm_a_rec.type != "mesh" and rm_a_rec.type != "difference")
+                if is_carving_rec or is_simple_rec then
+                    return { type = "difference", base = h_a_rec, subtract = rm_a_rec }
+                end
+            end
         end
     end
 
