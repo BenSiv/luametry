@@ -61,11 +61,13 @@ Usage: luametry <command> [options]
 luametry run <file>
 luametry live <file> [-v viewer]
 luametry analyze <file>
+luametry reverse <file>
 
 defaults:
 run  -> execute script, generate STL + manifest
 live -> run + watch + viewer
 analyze -> show model structure and metadata
+reverse -> reverse engineer STL to Luametry code
 
 luametry <command> -h for more info
     """,
@@ -101,6 +103,17 @@ Required:
 
 Examples:
 luametry analyze tst/examples/hex_bolt_simple.lua
+    """,
+    ["luametry reverse"] = """
+Description:
+Analyzes a CAD script and attempts to reverse-engineer it back into 
+parametric Luametry code.
+
+Required:
+<file>  Path to the Lua CAD script.
+
+Examples:
+luametry reverse tst/benchy.lua
     """,
     ["luametry export"] = """
 Description:
@@ -770,6 +783,59 @@ function cli.do_screenshot(cmd_args)
     end
 end
 
+-- Reverse CAD command
+function cli.do_reverse(cmd_args)
+    -- Check for help flags first
+    for _, a in ipairs(cmd_args) do
+        if a == "-h" or a == "--help" then
+            print(cli.get_help("luametry reverse"))
+            return "success"
+        end
+    end
+    
+    script = cmd_args[1]
+    if script == nil then
+        print("Error: No script specified")
+        return "error"
+    end
+    
+    val = nil
+    if string.match(script, "%.stl$") != nil then
+        print("Importing mesh: " .. script)
+        cad = require("cad")
+        ok, res = xpcall(function() return cad.create.from_stl(script) end, cli.error_handler)
+        if ok then val = res end
+    elseif string.match(script, "%.obj$") != nil then
+        print("Importing mesh: " .. script)
+        cad = require("cad")
+        ok, res = xpcall(function() return cad.create.from_obj(script) end, cli.error_handler)
+        if ok then val = res end
+    else
+        val = cli.safe_dofile(script)
+    end
+    
+    if val == nil then return "error" end
+    
+    if type(val) != "table" or val.type == nil then
+        print("Error: Script did not return a valid shape.")
+        return "error"
+    end
+    
+    print("Analyzing geometry for primitives")
+    re = require("reparameterize")
+    cad_mod = require("cad")
+    analysis = re.analyze(val, cad_mod)
+    
+    print("\nREVERSE CAD RESULT")
+    print(string.rep("=", 40))
+    print(re.to_code(analysis))
+    print(string.rep("=", 40) .. "\n")
+    
+    basename = string.match(script, "([^/]+)%.lua$") or "output"
+    print("Suggested recovery script: " .. basename .. "_re.lua")
+    return "success"
+end
+
 -- Main entry point
 function cli.main()
     command_funcs = {
@@ -779,7 +845,8 @@ function cli.main()
         ["install"] = cli.do_install,
         ["update"] = cli.do_update,
         ["screenshot"] = cli.do_screenshot,
-        ["analyze"] = cli.do_analyze
+        ["analyze"] = cli.do_analyze,
+        ["reverse"] = cli.do_reverse
     }
     
     command = arg[1]
@@ -798,7 +865,6 @@ function cli.main()
     for i = 2, #arg do
         table.insert(cmd_args, arg[i])
     end
-    cmd_args[0] = arg[0]
     
     func = command_funcs[command]
     if func == nil then

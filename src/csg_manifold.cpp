@@ -628,6 +628,25 @@ static int l_surface_area(lua_State *L) {
   return 1;
 }
 
+// Slice Area at Z
+static int l_slice(lua_State *L) {
+  ManifoldManifold *m = check_manifold(L, 1);
+  double z = luaL_checknumber(L, 2);
+
+  ManifoldPolygons *polys = manifold_slice(manifold_alloc_polygons(), m, z);
+
+  ManifoldCrossSection *cs = manifold_cross_section_of_polygons(
+      manifold_alloc_cross_section(), polys, MANIFOLD_FILL_RULE_EVEN_ODD);
+
+  double area = manifold_cross_section_area(cs);
+
+  manifold_delete_cross_section(cs);
+  manifold_delete_polygons(polys);
+
+  lua_pushnumber(L, area);
+  return 1;
+}
+
 // Garbage collection
 static int l_gc(lua_State *L) {
   ManifoldManifold **ud =
@@ -665,6 +684,7 @@ static const struct luaL_Reg csg_lib[] = {{"cube", l_cube},
                                           {"surface_area", l_surface_area},
                                           {"to_mesh", l_to_mesh},
                                           {"from_mesh", l_from_mesh},
+                                          {"slice", l_slice},
                                           {NULL, NULL}};
 
 extern "C" int luaopen_csg_manifold(lua_State *L) {
