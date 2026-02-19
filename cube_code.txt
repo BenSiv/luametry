@@ -1,8 +1,0 @@
-Analyzing geometry for primitives
-
-REVERSE CAD RESULT
-========================================
-cad.translate(cad.cube({size={10.000, 20.000, 30.000}, center=false}), {5.000, 5.000, 5.000})
-========================================
-
-Suggested recovery script: test_cube_re.lua

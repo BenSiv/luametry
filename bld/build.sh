@@ -73,6 +73,7 @@ cp src/threemf.lua .
 cp src/font.lua .
 cp src/reparameterize.lua .
 cp src/cli.lua .
+cp src/entry.lua .
 
 # Copy lib/ subdirectory (argparse and deps)
 mkdir -p lib
