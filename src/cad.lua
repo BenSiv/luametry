@@ -361,7 +361,7 @@ function render_node(node)
                 end
             end
             
-            c = (p.center or p.c) and 1 or 0
+            c = not not (p.center or p.c)
             return csg.cube(x, y, z, c)
             
         elseif node.shape == "cylinder" then
@@ -371,7 +371,7 @@ function render_node(node)
             r1 = p.r1 or p.radius_bottom or p.radius1 or r
             r2 = p.r2 or p.radius_top or p.radius2 or r
             fn = p.fn or p.segments or 32
-            c = (p.center or p.c) and 1 or 0
+            c = not not (p.center or p.c)
             return csg.cylinder(h, r1, r2, fn, c)
             
         elseif node.shape == "sphere" then
