@@ -112,7 +112,7 @@ static int l_batch_union(lua_State *L) {
     luaL_error(L, "Expected table of manifolds");
   }
 
-  ManifoldManifoldVec *vec = manifold_alloc_manifold_vec();
+  ManifoldManifoldVec *vec = manifold_manifold_empty_vec(manifold_alloc_manifold_vec());
   int n = lua_objlen(L, 1);
 
   for (int i = 1; i <= n; i++) {
@@ -241,7 +241,7 @@ static int l_batch_hull(lua_State *L) {
     luaL_error(L, "Expected table of manifolds");
   }
 
-  ManifoldManifoldVec *vec = manifold_alloc_manifold_vec();
+  ManifoldManifoldVec *vec = manifold_manifold_empty_vec(manifold_alloc_manifold_vec());
   int n = lua_objlen(L, 1);
   for (int i = 1; i <= n; i++) {
     lua_rawgeti(L, 1, i);
