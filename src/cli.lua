@@ -8,7 +8,7 @@ cli = {}
 -- Default configuration
 cli.config = {
     viewer = os.getenv("LUAMETRY_VIEWER") or "f3d",
-    viewer_args = "--up +Z --resolution 1200,800"
+    viewer_args = "--up +Z --grid --grid-absolute --resolution 1200,800"
 }
 
 -- Helper to get the real home directory (handles sudo)
@@ -650,7 +650,7 @@ function cli.do_install(cmd_args)
                 io.write(f, "    -- Default 3D viewer\n")
                 io.write(f, "    viewer = \"f3d\",\n")
                 io.write(f, "    -- Arguments passed to viewer in live mode\n")
-                io.write(f, "    viewer_args = \"--up +Z --resolution 1200,800\"\n")
+                io.write(f, "    viewer_args = \"--up +Z --grid --grid-absolute --resolution 1200,800\"\n")
                 io.write(f, "}\n")
                 io.close(f)
             end
