@@ -20,7 +20,7 @@ if [ -z "$LUAM_DIR" ]; then
 fi
 
 if [ -z "$MANIFOLD_DIR" ]; then
-    MANIFOLD_DIR="$HOME/Projects/manifold"
+    MANIFOLD_DIR="$HOME/Projects/external/manifold"
 fi
 
 if [ -z "$LFS_DIR" ]; then

@@ -636,7 +636,7 @@ static int l_slice(lua_State *L) {
   ManifoldPolygons *polys = manifold_slice(manifold_alloc_polygons(), m, z);
 
   ManifoldCrossSection *cs = manifold_cross_section_of_polygons(
-      manifold_alloc_cross_section(), polys, MANIFOLD_FILL_RULE_EVEN_ODD);
+      manifold_alloc_cross_section(), polys);
 
   double area = manifold_cross_section_area(cs);
 
