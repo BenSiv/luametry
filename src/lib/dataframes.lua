@@ -254,7 +254,7 @@ function group_by(data, keys)
         key_string = table.concat(key_parts, "\0") -- use null as safe separator
 
         -- nitialize group if not seen
-        if not seen[key_string] then
+        if seen[key_string] == nil then
             group = {
                 cols = {},
                 rows = {}
@@ -407,7 +407,7 @@ function generate_column(tbl, new_col, col1, op, col2)
         if v1 != nil and v2 != nil then
             condition = loadstring(string.format("return %s %s %s", v1 ,op ,v2))
             result = condition()
-            if result then
+            if result != nil then
                 new_tbl[row][new_col] = result
             end
         end
@@ -422,7 +422,7 @@ function transform(tbl, new_col, col1, col2, transform_fn)
         v1, v2 = values[col1], values[col2]
         if v1 != nil and v2 != nil then
             result = transform_fn(v1, v2)
-            if result then
+            if result != nil then
                 new_tbl[row][new_col] = result
             end
         end
@@ -479,7 +479,7 @@ function innerjoin(df1, df2, columns, prefixes)
 
     shared_columns = {}
     for col in pairs(df1_columns) do
-        if df2_columns[col] then
+        if df2_columns[col] != nil then
             shared_columns[col] = true
         end
     end

@@ -506,7 +506,7 @@ end
 -- Merge Sort function along with indices
 function merge_sort_with_indices(array, _inner)
     -- _inner recursion boolean flag
-    if not _inner then
+    if _inner == nil then
         for i = 1, #array do
             array[i] =  {value = array[i], index = i}
         end
@@ -627,7 +627,7 @@ end
 -- Function to save a Lua table to a file
 function save_table(filename, tbl)
     file = io.open(filename, "w")
-    if file then
+    if file != nil then
         io.write(file, "return ")
         io.write(file, serialize(tbl))
         io.close(file)
@@ -639,7 +639,7 @@ end
 -- Function to load a Lua table from a file
 function load_table(filename)
     chunk, err = loadfile(filename)
-    if chunk then
+    if chunk != nil then
         return chunk()
     else
         print("Error loading file: " .. err)
@@ -747,7 +747,7 @@ function breakpoint()
     i = 1
     while true do
         name, value = debug.getlocal(level, i)
-        if not name then break end
+        if name == nil then break end
         _G[name] = value
         i = i + 1
     end
@@ -759,7 +759,7 @@ end
 --     i = 1
 --     while true do
 --         name, value = debug.getlocal(level, i)
---         if not name then break end
+--         if name == nil then break end
 --         _[name] = value
 --         i = i + 1
 --     end
@@ -848,7 +848,7 @@ function user_defined_globals()
 
     user_globals = {}
     for k, v in pairs(_G) do
-        if not is_default_global[k] then
+        if is_default_global[k] == nil then
             table.insert(user_globals, {
                 name = k,
                 type = type(v)
@@ -860,7 +860,7 @@ function user_defined_globals()
 end
 
 function write_log_file(log_dir, filename, header, entries)
-    if not log_dir then return nil end
+    if log_dir == nil then return nil end
 
     file_path = joinpath(log_dir, filename)
     file = io.open(file_path, "w")
@@ -884,18 +884,18 @@ end
 
 function get_function_source(func)
     info = debug.getinfo(func, "Sln")
-    if not info or not info.source or not info.linedefined or not info.lastlinedefined then
+    if info == nil or info.source == nil or info.linedefined == nil or info.lastlinedefined == nil then
         return nil, "Could not retrieve debug info"
     end
 
-    if not string.match(info.source, "^@") then
+    if string.match(info.source, "^@") == nil then
         return nil, "Function not defined in a file (probably loaded dynamically)"
     end
 
     file_path = string.sub(info.source, 2) -- emove leading '@'
 
     file = io.open(file_path, "r")
-    if not file then
+    if file == nil then
         return nil, "Could not open file: " .. file_path
     end
 
@@ -922,13 +922,13 @@ function extract_help_from_source(source)
     if header == nil then
         header = string.match(source, "function%s+.-\n")
     end
-    if header then
+    if header != nil then
         header = string.gsub(string.gsub(header, "^.*function%s+", ""), "%s*$", "")
     end
 
     -- ry multiline comment first: --  ... 
     comment = string.match(source, "%-%-%[%[(.-)%]%]") 
-    if not comment then
+    if comment == nil then
         -- Fallback: single line comment
         comment = string.match(source, "\n%s*%-%-%s*(.-)\n")
         if comment == nil then
@@ -936,7 +936,7 @@ function extract_help_from_source(source)
         end
     end
 
-    if comment then
+    if comment != nil then
         comment = string.gsub(string.gsub(comment, "^%s+", ""), "%s+$", "")
     end
 
@@ -959,15 +959,15 @@ function help(func_name)
     end
 
     src, err = get_function_source(func)
-    if not src then
+    if src == nil then
         print("Error: " .. err)
         return
     end
 
     header, comment = extract_help_from_source(src)
 
-    if header then print("Signature: " .. header) end
-    if comment then print("Description: " .. comment) end
+    if header != nil then print("Signature: " .. header) end
+    if comment != nil then print("Description: " .. comment) end
 end
 
 
