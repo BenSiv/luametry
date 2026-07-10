@@ -12,7 +12,7 @@ if default_viewer == nil then
 end
 cli.config = {
     viewer = default_viewer,
-    viewer_args = "--up +Z --resolution 1200,800"
+    viewer_args = "--up +Z --grid --grid-absolute --resolution 1200,800"
 }
 
 -- Helper to get the real home directory (handles sudo)
@@ -174,6 +174,15 @@ function cli.get_help(command)
     return help_str
 end
 
+-- Helper to resolve script filename, auto-appending .lua if needed
+function cli.resolve_script_path(script)
+    if script == nil then return nil end
+    if lfs.attributes(script) == nil and lfs.attributes(script .. ".lua") != nil then
+        return script .. ".lua"
+    end
+    return script
+end
+
 -- Helper to recursively find all .lua files in a directory
 function cli.scan_dir(dir, results)
     for entry in lfs.dir(dir) do
@@ -329,6 +338,8 @@ function cli.do_run(cmd_args)
         return "error"
     end
 
+    script = cli.resolve_script_path(script)
+
     res = cli.safe_dofile(script)
     if res == nil then return "error" end
     
@@ -373,6 +384,8 @@ function cli.do_analyze(cmd_args)
         print("Error: No script specified")
         return "error"
     end
+
+    script = cli.resolve_script_path(script)
     
     res = cli.safe_dofile(script)
     if res == nil then return "error" end
@@ -492,6 +505,8 @@ function cli.do_live(cmd_args)
         print(cli.get_help("luametry live"))
         return "error"
     end
+
+    script = cli.resolve_script_path(script)
     
     print("Luametry Live Mode")
     print("Script: " .. script)
@@ -601,6 +616,8 @@ function cli.do_export(cmd_args)
         print(cli.get_help("luametry export"))
         return "error"
     end
+
+    script = cli.resolve_script_path(script)
     
     if output_path == nil then
         print("Error: No output file specified (-o/--output)")
@@ -673,7 +690,7 @@ function cli.do_install(cmd_args)
                 io.write(f, "    -- Default 3D viewer\n")
                 io.write(f, "    viewer = \"f3d\",\n")
                 io.write(f, "    -- Arguments passed to viewer in live mode\n")
-                io.write(f, "    viewer_args = \"--up +Z --resolution 1200,800\"\n")
+                io.write(f, "    viewer_args = \"--up +Z --grid --grid-absolute --resolution 1200,800\"\n")
                 io.write(f, "}\n")
                 io.close(f)
             end
@@ -766,6 +783,8 @@ function cli.do_screenshot(cmd_args)
         print(cli.get_help("luametry screenshot"))
         return "error"
     end
+
+    script = cli.resolve_script_path(script)
     
     if output_path == nil then
         basename = string.match(script, "([^/]+)%.lua$")
@@ -827,6 +846,8 @@ function cli.do_reverse(cmd_args)
         print("Error: No script specified")
         return "error"
     end
+
+    script = cli.resolve_script_path(script)
     
     val = nil
     if string.match(script, "%.stl$") != nil then
