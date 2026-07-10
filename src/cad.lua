@@ -3,7 +3,10 @@ step = require("step")
 obj = require("obj")
 threemf = require("threemf")
 font = require("font")
-script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])") or "./"
+script_path = string.match(debug.getinfo(1).source, "@(.*[\\/])")
+if script_path == nil then
+    script_path = "./"
+end
 package.cpath = package.cpath .. ";" .. script_path .. "?.so"
 csg = require("csg.manifold")
 
@@ -79,13 +82,21 @@ function set_meta(node)
 end
 
 function make_shape(type, params)
-    node = { type = "shape", shape = type, params = params or {} }
+    shape_params = params
+    if params == nil then
+        shape_params = {}
+    end
+    node = { type = "shape", shape = type, params = shape_params }
     set_meta(node)
     return node
 end
 
 function make_transform(type, node, params)
-    t_node = { type = "transform", transform = type, params = params or {}, child = node }
+    transform_params = params
+    if params == nil then
+        transform_params = {}
+    end
+    t_node = { type = "transform", transform = type, params = transform_params, child = node }
     set_meta(t_node)
     return t_node
 end
@@ -186,24 +197,38 @@ end
 
 function cad.create.extrude(points, height, params)
     if type(points) == "table" and points.points != nil then
-         return set_meta({ type = "extrude", points = points.points, height = points.height, params = points or {} })
+         extrude_params = points
+         if points == nil then
+             extrude_params = {}
+         end
+         return set_meta({ type = "extrude", points = points.points, height = points.height, params = extrude_params })
+    end
+    if params == nil then
+        params = {}
     end
     return set_meta({
         type = "extrude",
         points = points,
         height = height,
-        params = params or {}
+        params = params
     })
 end
 
 function cad.create.revolve(points, params)
     if type(points) == "table" and points.points != nil then
-         return set_meta({ type = "revolve", points = points.points, params = points or {} })
+         revolve_params = points
+         if points == nil then
+             revolve_params = {}
+         end
+         return set_meta({ type = "revolve", points = points.points, params = revolve_params })
+    end
+    if params == nil then
+        params = {}
     end
     return set_meta({
         type = "revolve",
         points = points,
-        params = params or {}
+        params = params
     })
 end
 
@@ -289,7 +314,11 @@ end
 
 function cad.combine.trim(node, plane, offset)
     -- plane is {nx, ny, nz}
-    return make_trim(node, plane[1], plane[2], plane[3], offset or 0)
+    trim_offset = 0
+    if offset != nil then
+        trim_offset = offset
+    end
+    return make_trim(node, plane[1], plane[2], plane[3], trim_offset)
 end
 
 -- ============================================================================
@@ -322,7 +351,10 @@ end
 function cad.combine.split(node, plane, offset)
     m = render_node(node)
     nx, ny, nz = plane[1], plane[2], plane[3]
-    off = offset or 0
+    off = 0
+    if offset != nil then
+        off = offset
+    end
     -- split returns 2 manifold objects
     m1, m2 = csg.split_by_plane(m, nx, ny, nz, off)
     return { make_manifold_node(m1), make_manifold_node(m2) }
@@ -348,10 +380,25 @@ function render_node(node)
         if node.shape == "cube" then
             p = node.params
             -- Handle size variants
-            sz = p.size or p.s
-            x = p.x or p.width or p.w or 1
-            y = p.y or p.depth or p.d or 1
-            z = p.z or p.height or p.h or 1
+            sz = p.s
+            if p.size != nil then
+                sz = p.size
+            end
+
+            x = 1
+            if p.w != nil then x = p.w end
+            if p.width != nil then x = p.width end
+            if p.x != nil then x = p.x end
+
+            y = 1
+            if p.d != nil then y = p.d end
+            if p.depth != nil then y = p.depth end
+            if p.y != nil then y = p.y end
+
+            z = 1
+            if p.h != nil then z = p.h end
+            if p.height != nil then z = p.height end
+            if p.z != nil then z = p.z end
             
             if sz != nil then
                 if type(sz) == "number" then
@@ -367,19 +414,41 @@ function render_node(node)
             
         elseif node.shape == "cylinder" then
             p = node.params
-            h = p.h or p.height or 1
-            r = p.r or p.radius or 1
-            r1 = p.r1 or p.radius_bottom or p.radius1 or r
-            r2 = p.r2 or p.radius_top or p.radius2 or r
-            fn = p.fn or p.segments or 32
+            h = 1
+            if p.height != nil then h = p.height end
+            if p.h != nil then h = p.h end
+
+            r = 1
+            if p.radius != nil then r = p.radius end
+            if p.r != nil then r = p.r end
+
+            r1 = r
+            if p.radius1 != nil then r1 = p.radius1 end
+            if p.radius_bottom != nil then r1 = p.radius_bottom end
+            if p.r1 != nil then r1 = p.r1 end
+
+            r2 = r
+            if p.radius2 != nil then r2 = p.radius2 end
+            if p.radius_top != nil then r2 = p.radius_top end
+            if p.r2 != nil then r2 = p.r2 end
+
+            fn = 32
+            if p.segments != nil then fn = p.segments end
+            if p.fn != nil then fn = p.fn end
+
             c = false
             if p.center == true or p.c == true then c = true end
             return csg.cylinder(h, r1, r2, fn, c)
             
         elseif node.shape == "sphere" then
             p = node.params
-            r = p.r or p.radius or 1
-            fn = p.fn or p.segments or 32
+            r = 1
+            if p.radius != nil then r = p.radius end
+            if p.r != nil then r = p.r end
+
+            fn = 32
+            if p.segments != nil then fn = p.segments end
+            if p.fn != nil then fn = p.fn end
             return csg.sphere(r, fn)
             
         elseif node.shape == "tetrahedron" then
@@ -387,10 +456,23 @@ function render_node(node)
 
         elseif node.shape == "torus" then
             p = node.params
-            maj = p.major_r or p.major_radius or p.R or 3
-            min = p.minor_r or p.minor_radius or p.r or 1
-            seg_maj = p.major_segs or p.major_segments or 32
-            seg_min = p.minor_segs or p.minor_segments or 16
+            maj = 3
+            if p.R != nil then maj = p.R end
+            if p.major_radius != nil then maj = p.major_radius end
+            if p.major_r != nil then maj = p.major_r end
+
+            min = 1
+            if p.r != nil then min = p.r end
+            if p.minor_radius != nil then min = p.minor_radius end
+            if p.minor_r != nil then min = p.minor_r end
+
+            seg_maj = 32
+            if p.major_segments != nil then seg_maj = p.major_segments end
+            if p.major_segs != nil then seg_maj = p.major_segs end
+
+            seg_min = 16
+            if p.minor_segments != nil then seg_min = p.minor_segments end
+            if p.minor_segs != nil then seg_min = p.minor_segs end
             return csg.torus(maj, min, seg_maj, seg_min)
         end
         
@@ -419,7 +501,10 @@ function render_node(node)
 
     elseif node.type == "op" or node.type == "difference" or node.type == "intersection" or node.type == "hull" or node.type == "minkowski" then
         -- Handle both old and new style op nodes
-        op = node.op or node.type
+        op = node.type
+        if node.op != nil then
+            op = node.op
+        end
         children = node.children
         
         if #children == 0 then return csg.cube(0,0,0,0) end
@@ -451,10 +536,22 @@ function render_node(node)
         end
         
     elseif node.type == "extrude" then
-         return csg.extrude(node.points, node.height, node.params.slices or 0, node.params.twist or 0, node.params.scale_x or 1, node.params.scale_y or 1)
-         
+         slices = 0
+         if node.params.slices != nil then slices = node.params.slices end
+         twist = 0
+         if node.params.twist != nil then twist = node.params.twist end
+         scale_x = 1
+         if node.params.scale_x != nil then scale_x = node.params.scale_x end
+         scale_y = 1
+         if node.params.scale_y != nil then scale_y = node.params.scale_y end
+         return csg.extrude(node.points, node.height, slices, twist, scale_x, scale_y)
+
     elseif node.type == "revolve" then
-         return csg.revolve(node.points, node.params.circular_segments or 0, node.params.revolve_degrees or 360)
+         circular_segments = 0
+         if node.params.circular_segments != nil then circular_segments = node.params.circular_segments end
+         revolve_degrees = 360
+         if node.params.revolve_degrees != nil then revolve_degrees = node.params.revolve_degrees end
+         return csg.revolve(node.points, circular_segments, revolve_degrees)
     end
     
     error("Unknown node type: " .. tostring(node.type))

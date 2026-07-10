@@ -20,7 +20,12 @@ function re.get_bounding_box(mesh_bb, min_x_bb, min_y_bb, min_z_bb, max_x_bb, ma
 end
 
 function re.analyze_primitive(man_p, depth_p, tolerance_p, mesh_d_p, vol_p, bbox_p, bbox_vol_p, density_p, max_dim_p, min_dim_p, r_sph_p, sphere_vol_p, h_dims_p, area1_p, area2_p, r1_p, r2_p, cone_vol_p, r_cyl_p, cyl_vol_p, rot_c_p)
-    depth_p = depth_p or 0 tolerance_p = tolerance_p or 0.1
+    if depth_p == nil then
+        depth_p = 0
+    end
+    if tolerance_p == nil then
+        tolerance_p = 0.1
+    end
     if depth_p > 10 then 
         mesh_d_p = csg.to_mesh(man_p)
         bbox_p = re.get_bounding_box(mesh_d_p)
@@ -118,16 +123,28 @@ function re.detect_patterns(parts_pt, flat_parts_pt, groups_pt, new_parts_pt, fo
         if #g_loop_it >= 3 then
             cx_pt = 0 cy_pt = 0 cz_pt = 0
             for _, p_l_it in ipairs(g_loop_it) do
-                p_l_pos = p_l_it.translate or p_l_it.bbox.center
+                if p_l_it.translate != nil then
+                    p_l_pos = p_l_it.translate
+                else
+                    p_l_pos = p_l_it.bbox.center
+                end
                 cx_pt = cx_pt + p_l_pos[1] cy_pt = cy_pt + p_l_pos[2] cz_pt = cz_pt + p_l_pos[3]
             end
             cx_pt = cx_pt/#g_loop_it cy_pt = cy_pt/#g_loop_it cz_pt = cz_pt/#g_loop_it
-            p1_pos_pt = g_loop_it[1].translate or g_loop_it[1].bbox.center
+            if g_loop_it[1].translate != nil then
+                p1_pos_pt = g_loop_it[1].translate
+            else
+                p1_pos_pt = g_loop_it[1].bbox.center
+            end
             d_p_pt = math.sqrt((p1_pos_pt[1]-cx_pt)^2 + (p1_pos_pt[2]-cy_pt)^2)
             if d_p_pt > 0.5 then
                 is_rot_pt = true angles_pt = {}
                 for _, p_chk_it in ipairs(g_loop_it) do
-                    chk_p_pos = p_chk_it.translate or p_chk_it.bbox.center
+                    if p_chk_it.translate != nil then
+                        chk_p_pos = p_chk_it.translate
+                    else
+                        chk_p_pos = p_chk_it.bbox.center
+                    end
                     d_chk_p = math.sqrt((chk_p_pos[1]-cx_pt)^2 + (chk_p_pos[2]-cy_pt)^2)
                     if math.abs(d_chk_p - d_p_pt) > 3.0 or math.abs(chk_p_pos[3] - cz_pt) > 3.0 then is_rot_pt = false break end
                     table.insert(angles_pt, math.deg(math.atan2(chk_p_pos[2]-cy_pt, chk_p_pos[1]-cx_pt)))
@@ -154,7 +171,16 @@ function re.render_analysis(analysis_ra, r1_ra, r2_ra, c_p_ra, r_l_ra, r_it_ra_v
     elseif analysis_ra.type == "sphere" then
         return csg.translate(csg.sphere(analysis_ra.r, 32), analysis_ra.translate[1], analysis_ra.translate[2], analysis_ra.translate[3])
     elseif analysis_ra.type == "cylinder" then
-        r1_ra = analysis_ra.r1 or analysis_ra.r r2_ra = analysis_ra.r2 or analysis_ra.r
+        if analysis_ra.r1 != nil then
+            r1_ra = analysis_ra.r1
+        else
+            r1_ra = analysis_ra.r
+        end
+        if analysis_ra.r2 != nil then
+            r2_ra = analysis_ra.r2
+        else
+            r2_ra = analysis_ra.r
+        end
         c_p_ra = csg.cylinder(analysis_ra.h, r1_ra, r2_ra, 32, true)
         if analysis_ra.rotate[1] != 0 or analysis_ra.rotate[2] != 0 or analysis_ra.rotate[3] != 0 then c_p_ra = csg.rotate(c_p_ra, analysis_ra.rotate[1], analysis_ra.rotate[2], analysis_ra.rotate[3]) end
         return csg.translate(c_p_ra, analysis_ra.translate[1], analysis_ra.translate[2], analysis_ra.translate[3])
@@ -196,7 +222,11 @@ function re.calculate_fidelity_score(orig_f, recon_f, v_o_f, u_f_v, i_f_v, d_f_v
 end
 
 function re.analyze(node_a, cad_init, man_a_obj, best_a_obj, best_s_val, md_a_val, tl_a_val, cur_a_obj, rec_a_obj, s_v_a)
-    cad = cad_init or _G.cad man_a_obj = cad.render(node_a)
+    cad = _G.cad
+    if cad_init != nil then
+        cad = cad_init
+    end
+    man_a_obj = cad.render(node_a)
     best_a_obj = nil best_s_val = -1
     for eff_a_it=1, 3 do
         md_a_val = 5 + eff_a_it * 2 tl_a_val = 0.05 + eff_a_it * 0.05
@@ -232,12 +262,26 @@ function re.analyze_recursive(man_rec, d_rec, m_d_rec, tol_rec, parts_rec, res_l
     if h_a_rec != nil and h_a_rec.type != "mesh" then
         rm_o_rec = csg.difference(h_m_rec, man_rec)
         rm_v_rec = csg.volume(rm_o_rec)
-        if (rm_v_rec or 0) > 0.01 * (csg.volume(h_m_rec) or 1) then
+        rm_v_or_rec = 0
+        if rm_v_rec != nil then
+            rm_v_or_rec = rm_v_rec
+        end
+        h_vol_rec = csg.volume(h_m_rec)
+        h_vol_or_rec = 1
+        if h_vol_rec != nil then
+            h_vol_or_rec = h_vol_rec
+        end
+        if rm_v_or_rec > 0.01 * h_vol_or_rec then
             rm_a_rec = re.analyze_recursive(rm_o_rec, d_rec + 1, m_d_rec, tol_rec)
             -- Only accept Difference if it simplifies the problem (remnant is primitive)
             -- OR if it's a true "Carving" (Remnant is smaller than Original)
             if rm_a_rec != nil then
-                is_carving_rec = (rm_v_rec or 0) < (csg.volume(man_rec) or 0) * 0.9
+                man_vol_rec = csg.volume(man_rec)
+                man_vol_or_rec = 0
+                if man_vol_rec != nil then
+                    man_vol_or_rec = man_vol_rec
+                end
+                is_carving_rec = rm_v_or_rec < man_vol_or_rec * 0.9
                 is_simple_rec = (rm_a_rec.type != "mesh" and rm_a_rec.type != "difference")
                 if is_carving_rec or is_simple_rec then
                     return { type = "difference", base = h_a_rec, subtract = rm_a_rec }
@@ -284,7 +328,15 @@ function re.format_node(an_fn, d_fn, parts_f_l, bc_fn)
     elseif an_fn.type == "sphere" then
          return "cad.translate(cad.sphere(" .. tostring(an_fn.r) .. "), {" .. tostring(an_fn.translate[1]) .. ", " .. tostring(an_fn.translate[2]) .. ", " .. tostring(an_fn.translate[3]) .. "})"
     elseif an_fn.type == "cylinder" then
-        return "cad.translate(" .. (((an_fn.rotate[1] != 0 or an_fn.rotate[2] != 0 or an_fn.rotate[3] != 0) and ("cad.rotate(" .. ((an_fn.r1 != nil and "cad.cylinder({r1=" .. tostring(an_fn.r1) .. ", r2=" .. tostring(an_fn.r2) .. ", h=" .. tostring(an_fn.h) .. ", center=true})") or ("cad.cylinder({r=" .. tostring(an_fn.r) .. ", h=" .. tostring(an_fn.h) .. ", center=true})")) .. ", {" .. tostring(an_fn.rotate[1]) .. ", " .. tostring(an_fn.rotate[2]) .. ", " .. tostring(an_fn.rotate[3]) .. "} )") or ((an_fn.r1 != nil and "cad.cylinder({r1=" .. tostring(an_fn.r1) .. ", r2=" .. tostring(an_fn.r2) .. ", h=" .. tostring(an_fn.h) .. ", center=true})") or ("cad.cylinder({r=" .. tostring(an_fn.r) .. ", h=" .. tostring(an_fn.h) .. ", center=true})")))) .. ", {" .. tostring(an_fn.translate[1]) .. ", " .. tostring(an_fn.translate[2]) .. ", " .. tostring(an_fn.translate[3]) .. "})"
+        cyl_str_fn = "cad.cylinder({r=" .. tostring(an_fn.r) .. ", h=" .. tostring(an_fn.h) .. ", center=true})"
+        if an_fn.r1 != nil then
+            cyl_str_fn = "cad.cylinder({r1=" .. tostring(an_fn.r1) .. ", r2=" .. tostring(an_fn.r2) .. ", h=" .. tostring(an_fn.h) .. ", center=true})"
+        end
+        inner_str_fn = cyl_str_fn
+        if an_fn.rotate[1] != 0 or an_fn.rotate[2] != 0 or an_fn.rotate[3] != 0 then
+            inner_str_fn = "cad.rotate(" .. cyl_str_fn .. ", {" .. tostring(an_fn.rotate[1]) .. ", " .. tostring(an_fn.rotate[2]) .. ", " .. tostring(an_fn.rotate[3]) .. "} )"
+        end
+        return "cad.translate(" .. inner_str_fn .. ", {" .. tostring(an_fn.translate[1]) .. ", " .. tostring(an_fn.translate[2]) .. ", " .. tostring(an_fn.translate[3]) .. "})"
     elseif an_fn.type == "union" then
         parts_f_l = {}
         for _, p_fn_it in ipairs(an_fn.parts) do table.insert(parts_f_l, re.format_node(p_fn_it)) end

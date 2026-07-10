@@ -58,11 +58,25 @@ font.defaults = {
 }
 
 function font.create_text(text_str, params)
-    params = params or {}
-    h = params.h or font.defaults.h
-    t = params.t or font.defaults.t
-    z = params.z or font.defaults.z
-    spacing = params.spacing or font.defaults.spacing
+    if params == nil then
+        params = {}
+    end
+    h = font.defaults.h
+    if params.h != nil then
+        h = params.h
+    end
+    t = font.defaults.t
+    if params.t != nil then
+        t = params.t
+    end
+    z = font.defaults.z
+    if params.z != nil then
+        z = params.z
+    end
+    spacing = font.defaults.spacing
+    if params.spacing != nil then
+        spacing = params.spacing
+    end
     
     scale = h / 10
     
@@ -72,7 +86,10 @@ function font.create_text(text_str, params)
     
     for i = 1, #text_str do
         char = string.upper(string.sub(text_str, i, i))
-        glyph = font.glyphs[char] or font.glyphs[' ']
+        glyph = font.glyphs[' ']
+        if font.glyphs[char] != nil then
+            glyph = font.glyphs[char]
+        end
         
         pieces = {}
         

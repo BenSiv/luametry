@@ -6,8 +6,12 @@ lfs = require("lfs")
 cli = {}
 
 -- Default configuration
+default_viewer = os.getenv("LUAMETRY_VIEWER")
+if default_viewer == nil then
+    default_viewer = "f3d"
+end
 cli.config = {
-    viewer = os.getenv("LUAMETRY_VIEWER") or "f3d",
+    viewer = default_viewer,
     viewer_args = "--up +Z --resolution 1200,800"
 }
 
@@ -163,7 +167,11 @@ luametry screenshot tst/examples/hex_bolt.lua -o bolt.png --show
 }
 
 function cli.get_help(command)
-    return cli.help_strings[command] or cli.help_strings["luametry"]
+    help_str = cli.help_strings[command]
+    if help_str == nil then
+        help_str = cli.help_strings["luametry"]
+    end
+    return help_str
 end
 
 -- Helper to recursively find all .lua files in a directory
@@ -191,7 +199,10 @@ function cli.get_watch_files(script)
     
     -- 2. Script directory
     if script != nil then
-        script_dir = string.match(script, "(.*)/") or "."
+        script_dir = string.match(script, "(.*)/")
+        if script_dir == nil then
+            script_dir = "."
+        end
         if script_dir != "src" then -- Avoid double scan
             for entry in lfs.dir(script_dir) do
                 if string.match(entry, "%.lua$") != nil then
@@ -324,7 +335,10 @@ function cli.do_run(cmd_args)
     -- If script returns a shape, export it
     if type(res) == "table" and res.type != nil then
         if output_path == nil then
-            basename = string.match(script, "([^/]+)%.lua$") or "output"
+            basename = string.match(script, "([^/]+)%.lua$")
+            if basename == nil then
+                basename = "output"
+            end
             output_path = "out/" .. basename .. ".stl"
         end
         cad_mod = require("cad")
@@ -407,8 +421,14 @@ function cli.do_analyze(cmd_args)
     
     function dump_node(node, indent)
         prefix = string.rep("  ", indent)
-        label = (node.label != nil) and (" [" .. node.label .. "]") or ""
-        source = (node.source_info != nil) and (" (" .. string.match(node.source_info.source, "([^/]+)$") .. ":" .. node.source_info.line .. ")") or ""
+        label = ""
+        if node.label != nil then
+            label = " [" .. node.label .. "]"
+        end
+        source = ""
+        if node.source_info != nil then
+            source = " (" .. string.match(node.source_info.source, "([^/]+)$") .. ":" .. node.source_info.line .. ")"
+        end
         
         info = ""
         if node.type == "shape" then
@@ -477,7 +497,10 @@ function cli.do_live(cmd_args)
     print("Script: " .. script)
     print("Viewer: " .. viewer)
     
-    basename = string.match(script, "([^/]+)%.lua$") or "output"
+    basename = string.match(script, "([^/]+)%.lua$")
+    if basename == nil then
+        basename = "output"
+    end
     output_file = "out/" .. basename .. ".stl"
     
     -- Function to build and export
@@ -745,7 +768,10 @@ function cli.do_screenshot(cmd_args)
     end
     
     if output_path == nil then
-        basename = string.match(script, "([^/]+)%.lua$") or "screenshot"
+        basename = string.match(script, "([^/]+)%.lua$")
+        if basename == nil then
+            basename = "screenshot"
+        end
         output_path = "out/" .. basename .. ".png"
     end
     
@@ -760,7 +786,10 @@ function cli.do_screenshot(cmd_args)
         cad_mod.export(res, tmp_stl)
         
         print("Rendering screenshot to " .. output_path)
-        f3d_args = cli.config.viewer_args or "--up +Z"
+        f3d_args = cli.config.viewer_args
+        if f3d_args == nil then
+            f3d_args = "--up +Z"
+        end
         cmd = string.format("f3d %s --output %s --resolution %d,%d %s > /dev/null 2>&1", 
                            f3d_args, output_path, width, height, tmp_stl)
         
@@ -831,7 +860,10 @@ function cli.do_reverse(cmd_args)
     print(re.to_code(analysis))
     print(string.rep("=", 40) .. "\n")
     
-    basename = string.match(script, "([^/]+)%.lua$") or "output"
+    basename = string.match(script, "([^/]+)%.lua$")
+    if basename == nil then
+        basename = "output"
+    end
     print("Suggested recovery script: " .. basename .. "_re.lua")
     return "success"
 end

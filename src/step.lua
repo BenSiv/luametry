@@ -11,7 +11,9 @@ step.fmt_point = function(x, y, z)
 end
 
 function step.encode_mesh(mesh, name)
-    name = name or "exported_model"
+    if name == nil then
+        name = "exported_model"
+    end
     step_output = {}
     step_id_counter = 1
     

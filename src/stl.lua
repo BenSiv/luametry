@@ -81,7 +81,12 @@ function load_ascii(filename)
         line = string.match(line, "^%s*(.-)%s*$")
         
         if string.find(line, "^solid") != nil then
-            solid.name = string.match(line, "^solid%s+(.*)") or "imported"
+            matched_name = string.match(line, "^solid%s+(.*)")
+            if matched_name != nil then
+                solid.name = matched_name
+            else
+                solid.name = "imported"
+            end
             
         elseif string.find(line, "^facet normal") != nil then
             nx, ny, nz = string.match(line, "normal%s+([%d%.%-e]+)%s+([%d%.%-e]+)%s+([%d%.%-e]+)")

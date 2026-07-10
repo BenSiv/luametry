@@ -52,7 +52,9 @@ end
 
 -- Slice mesh at a given position along an axis ("x", "y", "z")
 function slicer.slice_mesh(mesh, pos, axis)
-    axis = axis or "z"
+    if axis == nil then
+        axis = "z"
+    end
     segments = {}
     
     -- Helper to swap coordinates for slicing logic (which assumes Z slice)
@@ -89,7 +91,9 @@ end
 
 -- Convert 2D segments to 3D shape for visualization
 function slicer.segments_to_shape(segments, thickness)
-    thickness = thickness or 0.2
+    if thickness == nil then
+        thickness = 0.2
+    end
     shapes = {}
     
     for _, seg in ipairs(segments) do
@@ -144,7 +148,9 @@ end
 
 -- Generate a "projection" by slicing densely along an axis
 function slicer.project_mesh(mesh, axis, step)
-    step = step or 1.0
+    if step == nil then
+        step = 1.0
+    end
     
     -- Determine range
     min_val = 999999

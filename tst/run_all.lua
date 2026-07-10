@@ -14,7 +14,9 @@ results = {
 api_coverage = {} -- map: "cad.func.name" -> count
 
 function discover_and_wrap_api(tbl, prefix, seen)
-    seen = seen or {}
+    if seen == nil then
+        seen = {}
+    end
     if seen[tbl] != nil then return end
     seen[tbl] = true
     
@@ -44,7 +46,9 @@ discover_and_wrap_api(cad, "cad")
 package.loaded["cad"] = cad
 
 function get_test_files(dir, file_list)
-    file_list = file_list or {}
+    if file_list == nil then
+        file_list = {}
+    end
     for entry in lfs.dir(dir) do
         if entry != "." and entry != ".." then
             path = dir .. "/" .. entry
@@ -72,9 +76,13 @@ function run_test(path)
     -- Load the chunk
     chunk, load_err = loadfile(path)
     if chunk == nil then
+        load_err_msg = "unknown"
+        if load_err != nil then
+            load_err_msg = load_err
+        end
         table.insert(results.failed, {
             path = path,
-            message = "Load error: " .. (load_err or "unknown"),
+            message = "Load error: " .. load_err_msg,
             traceback = ""
         })
         print(" [FAIL] Load error")
@@ -88,10 +96,20 @@ function run_test(path)
         table.insert(results.passed, path)
         print(" [PASS]")
     else
+        fail_message = "unknown error"
+        fail_traceback = ""
+        if err_obj != nil then
+            if err_obj.message != nil then
+                fail_message = err_obj.message
+            end
+            if err_obj.traceback != nil then
+                fail_traceback = err_obj.traceback
+            end
+        end
         table.insert(results.failed, {
             path = path,
-            message = (err_obj and err_obj.message) or "unknown error",
-            traceback = (err_obj and err_obj.traceback) or ""
+            message = fail_message,
+            traceback = fail_traceback
         })
         print(" [FAIL]")
     end
@@ -134,7 +152,10 @@ for _, name in ipairs(feature_names) do
     end
 end
 
-coverage_pct = (total_features > 0) and (covered_count / total_features * 100) or 0
+coverage_pct = 0
+if total_features > 0 then
+    coverage_pct = covered_count / total_features * 100
+end
 print(string.format("\n--- Feature Coverage: %.1f%% (%d/%d) ---", coverage_pct, covered_count, total_features))
 
 if #uncovered > 0 then

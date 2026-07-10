@@ -8,10 +8,34 @@ function arch(params)
         error("shapes.arch expects a params table")
     end
     
-    width = params.width or params.w or 10
-    height = params.height or params.h or 5
-    thickness = params.thickness or params.t or params.depth or params.d or 2
-    fn = params.fn or params.segments or 32
+    width = 10
+    if params.width != nil then
+        width = params.width
+    elseif params.w != nil then
+        width = params.w
+    end
+    height = 5
+    if params.height != nil then
+        height = params.height
+    elseif params.h != nil then
+        height = params.h
+    end
+    thickness = 2
+    if params.thickness != nil then
+        thickness = params.thickness
+    elseif params.t != nil then
+        thickness = params.t
+    elseif params.depth != nil then
+        thickness = params.depth
+    elseif params.d != nil then
+        thickness = params.d
+    end
+    fn = 32
+    if params.fn != nil then
+        fn = params.fn
+    elseif params.segments != nil then
+        fn = params.segments
+    end
     
     -- Create an arch shape
     -- Outer arc
@@ -32,19 +56,65 @@ function thread(params)
         error("shapes.thread expects a params table")
     end
     
-    r = params.r or params.radius or 5
-    h = params.h or params.height or params.length or params.l or 10
-    pitch = params.pitch or params.p or 1.0
-    fn = params.fn or params.segments or 64
-    cut = params.cut or params.subtractive or params.c or false
-    
+    r = 5
+    if params.r != nil then
+        r = params.r
+    elseif params.radius != nil then
+        r = params.radius
+    end
+    h = 10
+    if params.h != nil then
+        h = params.h
+    elseif params.height != nil then
+        h = params.height
+    elseif params.length != nil then
+        h = params.length
+    elseif params.l != nil then
+        h = params.l
+    end
+    pitch = 1.0
+    if params.pitch != nil then
+        pitch = params.pitch
+    elseif params.p != nil then
+        pitch = params.p
+    end
+    fn = 64
+    if params.fn != nil then
+        fn = params.fn
+    elseif params.segments != nil then
+        fn = params.segments
+    end
+    cut = false
+    if params.cut != nil then
+        cut = params.cut
+    elseif params.subtractive != nil then
+        cut = params.subtractive
+    elseif params.c != nil then
+        cut = params.c
+    end
+
     -- Profile Params merged into top level
-    depth = params.depth or params.d or (0.6 * pitch)
-    root_w = params.root_width or params.rw or (pitch * 0.8)
+    depth = 0.6 * pitch
+    if params.depth != nil then
+        depth = params.depth
+    elseif params.d != nil then
+        depth = params.d
+    end
+    root_w = pitch * 0.8
+    if params.root_width != nil then
+        root_w = params.root_width
+    elseif params.rw != nil then
+        root_w = params.rw
+    end
     if root_w > (pitch * 0.99) then
         root_w = pitch * 0.99
     end
-    crest_w = params.crest_width or params.cw or (pitch * 0.1)
+    crest_w = pitch * 0.1
+    if params.crest_width != nil then
+        crest_w = params.crest_width
+    elseif params.cw != nil then
+        crest_w = params.cw
+    end
     
     -- Overshoot for cutter to ensure surface break
     y_base = 0
@@ -79,7 +149,10 @@ function thread(params)
     total_len = circumference * num_turns
     
     -- Resolution (fn determines segments per turn approx)
-    use_fn = fn or 64
+    use_fn = 64
+    if fn != nil then
+        use_fn = fn
+    end
     total_slices = math.ceil(use_fn * num_turns)
     
     -- Extrude Rack
@@ -114,21 +187,49 @@ function thread(params)
              top = radius_taper.top
              
              if bottom != nil then
-                if current_z >= (bottom.start_z or 0) and current_z <= (bottom.end_z or 0) then
-                    t = (current_z - (bottom.start_z or 0)) / ((bottom.end_z or 0) - (bottom.start_z or 0))
-                    start_r = bottom.start_r or r
-                    end_r = bottom.end_r or r
+                bottom_start_z = 0
+                if bottom.start_z != nil then
+                    bottom_start_z = bottom.start_z
+                end
+                bottom_end_z = 0
+                if bottom.end_z != nil then
+                    bottom_end_z = bottom.end_z
+                end
+                if current_z >= bottom_start_z and current_z <= bottom_end_z then
+                    t = (current_z - bottom_start_z) / (bottom_end_z - bottom_start_z)
+                    start_r = r
+                    if bottom.start_r != nil then
+                        start_r = bottom.start_r
+                    end
+                    end_r = r
+                    if bottom.end_r != nil then
+                        end_r = bottom.end_r
+                    end
                     -- We modify the BASE radius
                     target_r = start_r + (end_r - start_r) * t
                     base_r = target_r
                 end
              end
-             
+
              if top != nil then
-                 if current_z >= (top.start_z or h) and current_z <= (top.end_z or h) then
-                    t = (current_z - (top.start_z or h)) / ((top.end_z or h) - (top.start_z or h))
-                    start_r = top.start_r or r
-                    end_r = top.end_r or r
+                top_start_z = h
+                if top.start_z != nil then
+                    top_start_z = top.start_z
+                end
+                top_end_z = h
+                if top.end_z != nil then
+                    top_end_z = top.end_z
+                end
+                 if current_z >= top_start_z and current_z <= top_end_z then
+                    t = (current_z - top_start_z) / (top_end_z - top_start_z)
+                    start_r = r
+                    if top.start_r != nil then
+                        start_r = top.start_r
+                    end
+                    end_r = r
+                    if top.end_r != nil then
+                        end_r = top.end_r
+                    end
                     target_r = start_r + (end_r - start_r) * t
                     base_r = target_r
                  end
