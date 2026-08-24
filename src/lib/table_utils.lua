@@ -35,8 +35,13 @@ end
 
 function unique(tbl)
     result = {}
-    for _, element in pairs(tbl) do 
-        if not occursin(element, result) then
+    -- deferred require: utils.lua requires this file at chunk-load time,
+    -- so a top-level require("lib.utils") here would recurse into a
+    -- half-loaded module; calling require() inside the function instead
+    -- resolves it lazily, after both modules have finished loading
+    utils = require("lib.utils")
+    for _, element in pairs(tbl) do
+        if not utils.occursin(element, result) then
             table.insert(result, element)
         end
     end

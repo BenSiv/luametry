@@ -39,7 +39,7 @@ function read(path)
         io.input(file)
         content = io.read("*all")
         if content != nil then
-            content = escape_string(content)
+            content = string_utils.escape_string(content)
         end
         io.close(file)
     else
@@ -73,11 +73,11 @@ function show_table(tbl, indent_level, limit)
     if limit == nil then
         limit = math.huge  -- if limit not provided, show all
     end
-    indent = repeat_string(" ", 4)
-    current_indent = repeat_string(indent, indent_level)
+    indent = string_utils.repeat_string(" ", 4)
+    current_indent = string_utils.repeat_string(indent, indent_level)
     print(current_indent .. "{")
     indent_level = indent_level + 1
-    current_indent = repeat_string(indent, indent_level)
+    current_indent = string_utils.repeat_string(indent, indent_level)
 
     count = 0
     for key, value in pairs(tbl) do
@@ -100,7 +100,7 @@ function show_table(tbl, indent_level, limit)
     end
 
     indent_level = indent_level - 1
-    current_indent = repeat_string(indent, indent_level)
+    current_indent = string_utils.repeat_string(indent, indent_level)
     print(current_indent .. "}")
 end
 
@@ -192,6 +192,16 @@ function occursin(element, source)
     	print("Source: ", source)
         error("Unsupported type given")
     end
+end
+
+-- Luam's `and`/`or` require boolean operands, so plain "value or default"
+-- nil-coalescing (fine in stock Lua) errors here whenever value is a
+-- truthy non-boolean (numbers, strings, tables -- the normal case).
+function default_value(value, fallback)
+    if value == nil then
+        return fallback
+    end
+    return value
 end
 
 function isempty(source)
@@ -309,6 +319,7 @@ end
 
 -- eneric slice function for composable types
 function slice(source, start_index, end_index)
+    result = nil
     if type(source) == "table" then
         result = slice_table(source, start_index, end_index)
     elseif type(source) == "string" then
@@ -979,6 +990,7 @@ utils.show = show
 utils.length = length
 utils.is_array = is_array
 utils.occursin = occursin
+utils.default_value = default_value
 utils.isempty = isempty
 utils.match = match
 utils.match_all = match_all

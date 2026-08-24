@@ -1,14 +1,15 @@
 package.path = "src/?.lua;" .. package.path
 cad = require("cad")
 shapes = require("shapes")
+utils = require("lib.utils")
 
 function create_hex_nut(params)
     -- Parameters & Defaults
-    shaft_dia = params.shaft_dia or 6
-    pitch = params.pitch or 1.0
-    head_dia = params.head_dia or 12 -- Same as bolt head?
-    head_height = params.head_height or 5
-    fn_shaft = params.fn or 64
+    shaft_dia = utils.default_value(params.shaft_dia, 6)
+    pitch = utils.default_value(params.pitch, 1.0)
+    head_dia = utils.default_value(params.head_dia, 12) -- Same as bolt head?
+    head_height = utils.default_value(params.head_height, 5)
+    fn_shaft = utils.default_value(params.fn, 64)
 
     -- 1. Nut Body (Hexagon)
     nut_body = cad.create.cylinder( {
@@ -34,13 +35,13 @@ function create_hex_nut(params)
     -- In the nut, this "Groove" volume becomes the "Ridge" volume.
     -- Geometry: Base at R (surface), Tip at R-depth (inward).
     
-    thread_depth = params.thread_depth or 0.6
-    tool_fn_val = params.tool_fn or 12
-    
+    thread_depth = utils.default_value(params.thread_depth, 0.6)
+    tool_fn_val = utils.default_value(params.tool_fn, 12)
+
     profile_params = {
         depth = thread_depth,
-        crest_width = params.thread_crest_width or 0.1,
-        root_width = params.thread_root_width or 1.6,
+        crest_width = utils.default_value(params.thread_crest_width, 0.1),
+        root_width = utils.default_value(params.thread_root_width, 1.6),
         tool_func = function(d, cw, rw)
              c = cad.create.cylinder( {
                 h = d + 1.0, 

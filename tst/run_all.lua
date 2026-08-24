@@ -116,6 +116,10 @@ function run_test(path)
 end
 
 -- Main Execution
+-- Several tests write to out/ (STL/manifest export); it's gitignored,
+-- so a fresh checkout has no such directory yet.
+lfs.mkdir("out")
+
 test_root = "tst"
 all_tests = get_test_files(test_root)
 

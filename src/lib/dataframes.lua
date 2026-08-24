@@ -401,7 +401,7 @@ end
 
 -- Function to generate new column based on a transformation of pair columns
 function generate_column(tbl, new_col, col1, op, col2)
-    new_tbl = copy(tbl)
+    new_tbl = utils.copy(tbl)
     for row, values in pairs(new_tbl) do
         v1, v2 = values[col1], values[col2]
         if v1 != nil and v2 != nil then
@@ -417,7 +417,7 @@ end
 
 -- Function to generate new column based on a transformation of pair columns
 function transform(tbl, new_col, col1, col2, transform_fn)
-    new_tbl = copy(tbl)
+    new_tbl = utils.copy(tbl)
     for row, values in pairs(new_tbl) do
         v1, v2 = values[col1], values[col2]
         if v1 != nil and v2 != nil then

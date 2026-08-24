@@ -326,9 +326,8 @@ end
 -- ============================================================================
 cad.query = {}
 
--- Forward declaration
--- render_node is global now
--- function render_node(node) ... defined below
+-- render_node/cad.render/cad.query.* call each other -- pre-declared, see ../../luam/doc/forward_references.md
+render_node = nil
 
 -- Helper: Render to Manifold
 function cad.render(node)
