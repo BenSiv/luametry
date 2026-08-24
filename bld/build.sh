@@ -83,7 +83,7 @@ cp obj/lfs.a ./lfs.a
 
 echo "Generating static binary with luastatic"
 export CC=g++
-luam $LUAM_DIR/lib/static/static.lua entry.lua cad.lua shapes.lua stl.lua step.lua obj.lua threemf.lua font.lua reparameterize.lua cli.lua \
+luam $LUAM_DIR/lib/static/init.lua entry.lua cad.lua shapes.lua stl.lua step.lua obj.lua threemf.lua font.lua reparameterize.lua cli.lua \
     lib/argparse.lua lib/utils.lua lib/dataframes.lua lib/string_utils.lua lib/table_utils.lua \
     csg_manifold.a lfs.a $LIB_LUA $INC_LUA $LIB_MANIFOLD_FLAGS $LIBS
 
