@@ -199,13 +199,13 @@ P = PARAMS  -- Shorthand
 -- cabin = shapes.rounded_cube({P.cabin_length, P.cabin_width, P.cabin_height}, 1, P.fn_low)
 -- cabin = cad.modify.translate( cabin, {P.cabin_offset_x, 0, P.cabin_center_z})
 
-cabin_core = cad.create.cube( {size={P.cabin_length - 2, P.cabin_width - 2, P.cabin_height - 2}, center=true})
-cabin = cad.modify.round(cabin_core, 1, P.fn_low)
-cabin = cad.modify.translate( cabin, {P.cabin_offset_x, 0, P.cabin_center_z})
+cabin = cad.create.cube({size={P.cabin_length - 2, P.cabin_width - 2, P.cabin_height - 2}, center=true})
+-- cabin = cad.modify.round(cabin_core, 1, P.fn_low)
+cabin = cad.modify.translate(cabin, {P.cabin_offset_x, 0, P.cabin_center_z})
 
 -- FINAL ASSEMBLY
 -- benchy = cad.combine.union( {hull_group, cabin, roof, chimney, cargo_box})
-benchy = cad.combine.union( {cabin})
+benchy = cad.combine.union({cabin})
 
 print("Exporting 3DBenchy...")
 if cad.export(benchy, "out/benchy.stl") then
