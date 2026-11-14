@@ -626,7 +626,7 @@ function serialize(tbl)
         if type(v) == "table" then
             str = str .. serialize(v) .. ","
         elseif type(v) == "string" then
-            str = str .. '"' .. v .. '",'
+            str = str .. "\"" .. v .. "\","
         else
             str = str .. tostring(v) .. ","
         end
@@ -679,7 +679,7 @@ function get_line_length()
     -- Try popen
     if io.popen != nil then
         ok, handle = pcall(io.popen, "stty size 2>/dev/null | awk '{print $2}'")
-        if ok and handle != nil and type(handle) == 'userdata' then
+        if ok and handle != nil and type(handle) == "userdata" then
             curr = io.input()
             io.input(handle)
             result = io.read("*a")
@@ -725,7 +725,7 @@ function exec_command(command)
     -- Try popen
     if io.popen != nil then
         ok, process = pcall(io.popen, command)
-        if ok and process != nil and type(process) == 'userdata' then
+        if ok and process != nil and type(process) == "userdata" then
             curr = io.input()
             io.input(process)
             output = io.read("*a")

@@ -171,7 +171,7 @@ function cli.get_help(command)
     if help_str == nil then
         help_str = cli.help_strings["luametry"]
     end
-    return help_str
+    return string.dedent(help_str)
 end
 
 -- Helper to resolve script filename, auto-appending .lua if needed

@@ -180,10 +180,10 @@ function view(data_table, args)
 
     -- Print column headers in bold
     for _, col_name in ipairs(columns) do
-        io.write("\27[1m")
+        io.write("\x1B[1m")
         padded_key = tostring(col_name)
         padded_key = padded_key .. string.rep(" ", column_widths[col_name] - #padded_key)
-        io.write(padded_key .. "\27[0m\t")
+        io.write(padded_key .. "\x1B[0m\t")
     end
     io.write("\n")
 

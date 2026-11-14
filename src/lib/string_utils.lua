@@ -49,11 +49,11 @@ end
 function strip(s)
     if s == nil then return s end
     -- remove leading BOM if present
-    s = string.gsub(s, "^\239\187\191", "")
-    -- remove leading ascii whitespace, BSP (U+000), and ZWSP (U+200B)
-    s = string.gsub(s, "^[%s\194\160\226\128\139]+", "")
-    -- remove trailing ascii whitespace, BSP, and ZWSP
-    s = string.gsub(s, "[%s\194\160\226\128\139]+$", "")
+    s = string.gsub(s, "^\u{FEFF}", "")
+    -- remove leading ascii whitespace, NBSP (U+00A0), and ZWSP (U+200B)
+    s = string.gsub(s, "^[%s\u{00A0}\u{200B}]+", "")
+    -- remove trailing ascii whitespace, NBSP, and ZWSP
+    s = string.gsub(s, "[%s\u{00A0}\u{200B}]+$", "")
     return s
 end
 
