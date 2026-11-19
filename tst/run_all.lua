@@ -3,7 +3,6 @@
 -- Advanced Test Runner for Luametry
 
 lfs = require("lfs")
-utils = require("lib.utils") -- Using existing utils if available, or define helper
 
 results = {
     passed = {},

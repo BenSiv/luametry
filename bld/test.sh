@@ -1,8 +1,11 @@
-#!/bin/bash
-# bld/test.sh
-# Run the Luametry test suite
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Ensure we are in the project root
 cd "$(dirname "$0")/.."
 
-./bin/luametry run tst/run_all.lua
+if [ ! -x "./bin/luametry" ]; then
+    echo "Building bin/luametry..."
+    ./bld/build.sh
+fi
+
+exec ./bin/luametry run tst/run_all.lua

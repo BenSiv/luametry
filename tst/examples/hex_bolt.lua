@@ -1,15 +1,19 @@
 package.path = "src/?.lua;" .. package.path
 cad = require("cad")
 shapes = require("shapes")
-utils = require("lib.utils")
+
+function default_val(val, def)
+    if val == nil then return def end
+    return val
+end
 
 function create_bolt(params)
     -- Parameters
-    head_dia = utils.default_value(params.head_dia, 10)
-    head_height = utils.default_value(params.head_height, 4)
-    shaft_dia = utils.default_value(params.shaft_dia, 5)
-    length = utils.default_value(params.length, 20)
-    fn_shaft = utils.default_value(params.fn, 64)
+    head_dia = default_val(params.head_dia, 10)
+    head_height = default_val(params.head_height, 4)
+    shaft_dia = default_val(params.shaft_dia, 5)
+    length = default_val(params.length, 20)
+    fn_shaft = default_val(params.fn, 64)
     
     -- Head: Hexagon is a cylinder with fn=6
     head = cad.create.cylinder( {
@@ -33,11 +37,11 @@ function create_bolt(params)
     
     -- Thread
     -- M6 coarse pitch is 1mm.
-    pitch = utils.default_value(params.pitch, 1.0)
+    pitch = default_val(params.pitch, 1.0)
     thread_len = length - 5 -- Partial threading
     
     -- Thread Profile Overrides
-    tool_fn_val = utils.default_value(params.tool_fn, 6)
+    tool_fn_val = default_val(params.tool_fn, 6)
     profile_params = {
         depth = params.thread_depth,
         crest_width = params.thread_crest_width,

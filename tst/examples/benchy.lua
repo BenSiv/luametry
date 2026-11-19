@@ -1,7 +1,11 @@
 package.path = package.path .. ";./src/?.lua"
 cad = require("cad")
 const shapes = require("shapes")
-utils = require("lib.utils")
+
+function default_val(val, def)
+    if val == nil then return def end
+    return val
+end
 
 print("Modeling Parametric 3DBenchy (Refactored)")
 
@@ -13,7 +17,7 @@ print("Modeling Parametric 3DBenchy (Refactored)")
 function base_cylinder(params)
     c = cad.create.cylinder(params)
     -- Default cylinder is centered (-h/2 to h/2). Move up by h/2.
-    h = utils.default_value(params.h, params.height)
+    h = default_val(params.h, params.height)
     return cad.modify.translate(c, {0, 0, h/2})
 end
 
@@ -207,8 +211,8 @@ end
 function make_cabin(p)
     -- Helper to generate a hull shape
     function get_shape(len, w_front, w_back, height_add, z_shift)
-        h_add = utils.default_value(height_add, 0)
-        z_off = utils.default_value(z_shift, 0)
+        h_add = default_val(height_add, 0)
+        z_off = default_val(z_shift, 0)
         
         -- Calculate Sloped Heights based on current length
         half_len = len / 2

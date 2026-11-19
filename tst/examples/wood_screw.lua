@@ -1,26 +1,30 @@
 package.path = "src/?.lua;" .. package.path
 cad = require("cad")
 shapes = require("shapes")
-utils = require("lib.utils")
+
+function default_val(val, def)
+    if val == nil then return def end
+    return val
+end
 
 function create_wood_screw(params)
     -- Parameters & Defaults
-    head_dia = utils.default_value(params.head_dia, 10)
-    head_height = utils.default_value(params.head_height, 4)
-    shaft_dia = utils.default_value(params.shaft_dia, 5)
-    length = utils.default_value(params.length, 20)
-    fn_shaft = utils.default_value(params.fn, 64)
-    tip_length = utils.default_value(params.tip_length, 5)
+    head_dia = default_val(params.head_dia, 10)
+    head_height = default_val(params.head_height, 4)
+    shaft_dia = default_val(params.shaft_dia, 5)
+    length = default_val(params.length, 20)
+    fn_shaft = default_val(params.fn, 64)
+    tip_length = default_val(params.tip_length, 5)
 
     -- Design Tunables
-    cone_ratio = utils.default_value(params.cone_ratio, 0.7)  -- Head cone portion
-    cyl_ratio = utils.default_value(params.cyl_ratio, 0.3)    -- Head cylinder portion
-    tip_sharpness = utils.default_value(params.tip_sharpness, 0.01)
+    cone_ratio = default_val(params.cone_ratio, 0.7)  -- Head cone portion
+    cyl_ratio = default_val(params.cyl_ratio, 0.3)    -- Head cylinder portion
+    tip_sharpness = default_val(params.tip_sharpness, 0.01)
 
     -- Thread Parameters
-    pitch = utils.default_value(params.pitch, 1.5)
-    tool_fn_val = utils.default_value(params.tool_fn, 6)
-    fade_len = utils.default_value(params.fade_length, 8)
+    pitch = default_val(params.pitch, 1.5)
+    tool_fn_val = default_val(params.tool_fn, 6)
+    fade_len = default_val(params.fade_length, 8)
     thread_depth = params.thread_depth
     thread_crest_width = params.thread_crest_width
     thread_root_width = params.thread_root_width

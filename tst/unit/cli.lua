@@ -1,7 +1,7 @@
 -- tst/unit/cli.lua
 -- Unit tests for CLI parsing and logic
 
-cli = require("cli")
+cli = require("luametry_cli")
 
 function test_help_strings()
     print("Testing Help Strings")

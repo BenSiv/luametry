@@ -1,23 +1,27 @@
 package.path = "src/?.lua;" .. package.path
 cad = require("cad")
-utils = require("lib.utils")
+
+function default_val(val, def)
+    if val == nil then return def end
+    return val
+end
 
 function create_screwdriver(params)
     -- Parameters & Defaults
-    handle_dia = utils.default_value(params.handle_dia, 20)
-    handle_len = utils.default_value(params.handle_len, 80)
-    shaft_dia = utils.default_value(params.shaft_dia, 6)
-    shaft_len = utils.default_value(params.shaft_len, 100)
-    tip_len = utils.default_value(params.tip_len, 10)
+    handle_dia = default_val(params.handle_dia, 20)
+    handle_len = default_val(params.handle_len, 80)
+    shaft_dia = default_val(params.shaft_dia, 6)
+    shaft_len = default_val(params.shaft_len, 100)
+    tip_len = default_val(params.tip_len, 10)
 
     -- Design Constants (Tunables)
-    flute_ratio = utils.default_value(params.flute_ratio, 0.4)        -- Flute size relative to handle dia
-    point_ratio = utils.default_value(params.point_ratio, 1.0)        -- Tip point height relative to shaft dia
-    point_sharpness = utils.default_value(params.point_sharpness, shaft_dia / 3) -- Tip radius
-    fin_thickness = utils.default_value(params.fin_thickness, 1.6)    -- Phillips cross thickness
-    taper_angle = utils.default_value(params.taper_angle, 10)         -- Cutter taper angle (degrees)
-    cutter_z_offset = utils.default_value(params.cutter_z_offset, 7)  -- Vertical shift for cutter
-    cutter_r_offset = utils.default_value(params.cutter_r_offset, fin_thickness / 10) -- Radial shift
+    flute_ratio = default_val(params.flute_ratio, 0.4)        -- Flute size relative to handle dia
+    point_ratio = default_val(params.point_ratio, 1.0)        -- Tip point height relative to shaft dia
+    point_sharpness = default_val(params.point_sharpness, shaft_dia / 3) -- Tip radius
+    fin_thickness = default_val(params.fin_thickness, 1.6)    -- Phillips cross thickness
+    taper_angle = default_val(params.taper_angle, 10)         -- Cutter taper angle (degrees)
+    cutter_z_offset = default_val(params.cutter_z_offset, 7)  -- Vertical shift for cutter
+    cutter_r_offset = default_val(params.cutter_r_offset, fin_thickness / 10) -- Radial shift
     
     -- 1. Handle Construction
     handle_base = cad.create.cylinder( {
